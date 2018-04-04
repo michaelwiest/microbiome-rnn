@@ -8,17 +8,23 @@ class OTUHandler(object):
             self.samples.append(pd.read_csv(f, index_col=0))
 
         self.strains = list(self.samples[0].index.values)
+        self.num_strains = len(self.strains)
         self.train_data = None
         self.val_data = None
 
     def set_train_val(self, percent=0.8):
         self.train_data = []
         self.val_data = []
+        temp_sizes = []
         for sample in self.samples:
             index = int(percent * sample.shape[1])
             self.train_data.append(sample.iloc[:, :index])
             self.val_data.append(sample.iloc[:, index:])
+            temp_sizes.append(sample.iloc[:, :index].shape[1])
+            temp_sizes.append(sample.iloc[:, index:].shape[1])
 
+        # For keeping track of max size the slice can be.
+        self.min_len = min(temp_sizes)
 
     def get_N_samples_and_targets(self, N, slice_size, train=True):
         samples = []
@@ -35,6 +41,7 @@ class OTUHandler(object):
             start_index = np.random.randint(sample.shape[1] - slice_size)
             data = sample.iloc[:, start_index: start_index + slice_size].values
             target = sample.iloc[:, start_index + slice_size].values
+            # target = sample.iloc[:, start_index + 1: start_index + slice_size + 1].values
             samples.append(data)
             targets.append(target)
         return np.array(samples), np.array(targets)
