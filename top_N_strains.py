@@ -5,6 +5,14 @@ from skbio.stats.composition import clr, ilr
 from sklearn import cluster, covariance, manifold, decomposition, preprocessing
 import os
 
+'''
+Takes the most prolific N strains from the first argument file and then
+selects those same strains from the second argument file. Writes them to
+output directory as well. Also removes a specific slice of data from the
+first file because the patient was travelling abroad at that time and his/her
+gut was affected.
+'''
+
 def load_data(file_to_read, subset=False, fraction_to_keep=0.05, index=None):
     otu_table = pd.read_csv(file_to_read, header=0, index_col=0)
 
@@ -45,8 +53,10 @@ abroad = [71, 122]
 otu_table1, otu_clr1 = load_data(f1, subset=True)
 otu_table1 = otu_table1.head(N_strains)
 otu_clr1 = otu_clr1.head(N_strains)
-strains = otu_table1.index.values
+strains = list(otu_table1.index.values)
 otu_table2, otu_clr2 = load_data(f2, subset=True, index=strains)
+otu_table2 = otu_table2.reindex(strains)
+otu_clr2 = otu_clr2.reindex(strains)
 
 
 # Drop these because the patient was abroad and they probably skew the data.
@@ -55,6 +65,10 @@ otu_table1.drop(list(range(abroad[0], abroad[1])), axis=1)
 otu_clr1.drop(list(range(abroad[0], abroad[1])), axis=1)
 otu_table1.columns = list(range(otu_table1.shape[1]))
 otu_clr1.columns = list(range(otu_clr1.shape[1]))
+
+if otu_table1.shape[0] != otu_table2.shape[0]:
+    raise ValueError('Not all strains specified in first argument file '
+                     'are in second argument file.')
 
 otu_table1.to_csv(os.path.join(data_dir, 'gut_A_subset_{}.csv'.format(N_strains)))
 otu_clr1.to_csv(os.path.join(data_dir, 'gut_A_subset_{}_clr.csv'.format(N_strains)))
