@@ -59,7 +59,7 @@ class LSTM(nn.Module):
 
         loss_function = nn.MSELoss()
         # Try Adagrad & RMSProp
-        optimizer = optim.SGD(self.parameters(), lr=lr)
+        optimizer = optim.Adam(self.parameters(), lr=lr)
 
         # For logging the data for plotting
         train_loss_vec = []
@@ -77,7 +77,7 @@ class LSTM(nn.Module):
                                                                       slice_len)
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                 # print(data.size())
-                targets = add_cuda_to_variable(targets, self.use_gpu).transpose(1, 2).transpose(0, 1)
+                targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
                 # print(targets.size())
                 # Pytorch accumulates gradients. We need to clear them out before each instance
                 self.zero_grad()
@@ -88,9 +88,13 @@ class LSTM(nn.Module):
 
                 outputs = self.__forward(data)
                 # print(outputs.size())
+                outputs = outputs[-1, :, :]
+                # print(outputs.size())
                 loss = 0
                 for bat in range(batch_size):
-                    loss += loss_function(outputs[:, bat, :], targets[:, bat, :].squeeze(1))
+                    # loss += loss_function(outputs[:, bat, :], targets[:, bat, :].squeeze(1))
+                    loss += loss_function(outputs[bat, :], targets[bat, :])
+                    # print(loss.size())
                 loss.backward()
                 optimizer.step()
 
@@ -99,13 +103,15 @@ class LSTM(nn.Module):
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           slice_len, train=False)
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                    targets = add_cuda_to_variable(targets, self.use_gpu).transpose(1, 2).transpose(0, 1)
+                    targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
 
                     self.__init_hidden()
                     outputs_val = self.__forward(data)
+                    outputs_val = outputs_val[-1, :, :]
                     val_loss = 0
                     for bat in range(self.batch_size):
-                        val_loss += loss_function(outputs_val[:, bat, :], targets[:, bat, :].squeeze(1))
+                        # val_loss += loss_function(outputs_val[:, bat, :], targets[:, bat, :].squeeze(1))
+                        val_loss += loss_function(outputs_val[bat, :], targets[bat, :])
                     val_loss_vec.append(val_loss.data[0] / self.batch_size)
                     train_loss_vec.append(loss.data[0] / self.batch_size)
                     print('Validataion Loss ' + str(val_loss.data[0]/batch_size))
