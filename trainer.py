@@ -1,31 +1,42 @@
-from otu_handler import *
-from model import *
-from helper import *
-import csv
-import numpy as np
+from otu_handler import OTUHandler
+from model import LSTM
+import torch
+import os
+
+# Constant stuff
+model_dir = 'models'
+log_dir = 'logs'
+
 
 batch_size = 30
 hidden_dim = 100
-samples_per_epoch = 5000
+samples_per_epoch = 50000
 num_epochs = 15
-learning_rate = 0.003
+learning_rate = 0.001
 seq_len = 6
 slice_incr_perc = 0.1
-otu_handler = OTUHandler(['data/gut_A_subset_5.csv',
-                          'data/gut_B_subset_5.csv'])
+otu_handler = OTUHandler([
+                          # 'data/gut_A_subset_5.csv',
+                          'data/gut_A_subset_5_clr.csv',
+                          # 'data/gut_B_subset_5.csv'
+                          'data/gut_B_subset_5_clr.csv'
+                          ])
 otu_handler.set_train_val()
 
 use_gpu = torch.cuda.is_available()
 
-rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu)
+rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
+           LSTM_in_size=10)
 
 model_name = 'model.pt'
 log_name = 'log.csv'
+save_params = (os.path.join(model_dir, model_name),
+               os.path.join(log_dir, log_name))
+
 train_loss, val_loss = rnn.train(seq_len, batch_size,
                                  num_epochs,
                                  learning_rate,
                                  samples_per_epoch,
-                                 save_params=(model_name, log_name),
+                                 save_params=save_params,
                                  slice_incr_perc=slice_incr_perc
                                  )
-# print(rnn.batch_dream(5, '$M', 2012, 1, fs, 566))

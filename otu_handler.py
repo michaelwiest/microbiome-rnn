@@ -26,6 +26,9 @@ class OTUHandler(object):
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)
 
+    '''
+    Returns data of shape N x num_organisms x slice_size
+    '''
     def get_N_samples_and_targets(self, N, slice_size, train=True):
         samples = []
         targets = []

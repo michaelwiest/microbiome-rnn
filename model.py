@@ -16,27 +16,45 @@ import csv
 
 class LSTM(nn.Module):
     def __init__(self, hidden_dim, bs, otu_handler,
-                 use_gpu=False):
+                 use_gpu=False,
+                 LSTM_in_size=None):
         super(LSTM, self).__init__()
         self.hidden_dim = hidden_dim
         self.otu_handler = otu_handler
-        self.lstm = nn.LSTM(self.otu_handler.num_strains, hidden_dim, 1)
+        if LSTM_in_size is None:
+            LSTM_in_size = self.otu_handler.num_strains
+        self.lstm = nn.LSTM(LSTM_in_size, hidden_dim, 1)
         # The linear layer maps from hidden state space to target space
         # target space = vocab size, or number of unique characters in daa
-        self.linear0 = nn.Linear(hidden_dim, hidden_dim)
-        self.linear1 = nn.Linear(hidden_dim, self.otu_handler.num_strains)
-        # self.linear2 = nn.Linear()
+        self.after_lstm = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, self.otu_handler.num_strains),
+            # nn.BatchNorm1d(self.otu_handler.num_strains)
+            nn.Tanh()
+        )
+        self.before_lstm = nn.Sequential(
+            nn.Linear(self.otu_handler.num_strains, LSTM_in_size),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            # nn.Linear(hidden_dim, LSTM_in_size),
+            # nn.BatchNorm1d(self.otu_handler.num_strains)
+            # nn.Tanh(),
+        )
 
         # Non-torch inits.
         self.batch_size = bs
         self.use_gpu = use_gpu
         self.hidden = self.__init_hidden()
 
-    def __forward(self, input):
-        # input sentence is shape: sequence_size x batch x num_strains
-        output, self.hidden = self.lstm(input, self.hidden)
-        output = self.linear0(output)
-        output = self.linear1(output)
+    def __forward(self, input_data):
+        # input_data is shape: sequence_size x batch x num_strains
+        input_data = self.before_lstm(input_data)
+        output, self.hidden = self.lstm(input_data, self.hidden)
+        # output = output.transpose(1, 2)
+        output = self.after_lstm(output)
+        # print(output.size())
         return output
 
     def __init_hidden(self):
@@ -45,8 +63,13 @@ class LSTM(nn.Module):
             self.hidden = (Variable(torch.zeros(1, self.batch_size, self.hidden_dim).cuda()),
                     Variable(torch.zeros(1, self.batch_size, self.hidden_dim).cuda()))
         else:
-            self.hidden =  (Variable(torch.zeros(1, self.batch_size, self.hidden_dim)),
-                    Variable(torch.zeros(1, self.batch_size, self.hidden_dim)))
+            self.hidden = (Variable(torch.zeros(1,
+                                                self.batch_size,
+                                                self.hidden_dim)),
+                           Variable(torch.zeros(1,
+                                                self.batch_size,
+                                                self.hidden_dim))
+                           )
 
     def train(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
               slice_incr_perc=None, save_params=None):
@@ -76,9 +99,8 @@ class LSTM(nn.Module):
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                       slice_len)
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                # print(data.size())
+
                 targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
-                # print(targets.size())
                 # Pytorch accumulates gradients. We need to clear them out before each instance
                 self.zero_grad()
 
