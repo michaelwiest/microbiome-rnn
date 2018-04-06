@@ -72,7 +72,7 @@ class LSTM(nn.Module):
                            )
 
     def train(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
-              slice_incr_perc=None, save_params=None):
+              slice_incr=None, save_params=None):
         np.random.seed(1)
 
         self.batch_size = batch_size
@@ -140,8 +140,11 @@ class LSTM(nn.Module):
                 iterate += 1
             print('Completed Epoch ' + str(epoch))
 
-            if slice_incr_perc is not None:
-                slice_len += slice_len * slice_incr_perc
+            if slice_incr is not None:
+                if slice_incr >= 1.0:
+                    slice_len += slice_incr
+                else:
+                    slice_len += slice_len * slice_incr_perc
                 slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
                 print('Increased slice length to: {}'.format(slice_len))
 

@@ -10,14 +10,19 @@ log_dir = 'logs'
 
 batch_size = 30
 hidden_dim = 100
-samples_per_epoch = 50000
+samples_per_epoch = 100000
 num_epochs = 15
-learning_rate = 0.001
+learning_rate = 0.0005
 seq_len = 6
-slice_incr_perc = 0.1
+
+# If this value is below one then it increases by that percent
+# every epoch. If greater than one then it increases by that fixed
+# amount after every epoch.
+slice_incr_amt = 1
 otu_handler = OTUHandler([
                           # 'data/gut_A_subset_5.csv',
                           'data/gut_A_subset_5_clr.csv',
+                          # 'data/gut_A_subset_5_smooth_clr.csv'
                           # 'data/gut_B_subset_5.csv'
                           'data/gut_B_subset_5_clr.csv'
                           ])
@@ -38,5 +43,5 @@ train_loss, val_loss = rnn.train(seq_len, batch_size,
                                  learning_rate,
                                  samples_per_epoch,
                                  save_params=save_params,
-                                 slice_incr_perc=slice_incr_perc
+                                 slice_incr=slice_incr_amt
                                  )
