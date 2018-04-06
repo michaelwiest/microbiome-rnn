@@ -9,7 +9,6 @@ import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import random
-import pdb
 import numpy as np
 from helper import *
 import csv
@@ -157,40 +156,3 @@ class LSTM(nn.Module):
                 print('Saved model state to: {}'.format(save_params[0]))
 
         return train_loss_vec, val_loss_vec
-
-    # def daydream(self, primer, T, predict_len=None):
-    #     vocab_size = len(self.vocab)
-    #     # Have we detected an end character?
-    #     end_found = False
-    #     self.batch_size = 1
-    #
-    #     self.__init_hidden()
-    #     primer_input = [self.vocab[char] for char in primer]
-    #
-    #     self.slice_len = len(primer_input)
-    #     # build hidden layer
-    #     _ = self.__forward(add_cuda_to_variable(primer_input[:-1], self.use_gpu))
-    #
-    #     inp = add_cuda_to_variable([primer_input[-1]], self.use_gpu)
-    #     self.seq_len = 1
-    #     predicted = list(primer_input)
-    #     if predict_len is not None:
-    #         for p in range(predict_len):
-    #             output = self.__forward(inp)
-    #             soft_out = custom_softmax(output.data.squeeze(), T)
-    #             predicted.append(flip_coin(soft_out, self.use_gpu))
-    #             inp = add_cuda_to_variable([predicted[-1]], self.use_gpu)
-    #
-    #     else:
-    #         while end_found == False:
-    #             output = self.__forward(inp)
-    #             soft_out = custom_softmax(output.data.squeeze(), T)
-    #             found_char = flip_coin(soft_out, self.use_gpu)
-    #             predicted.append(found_char)
-    #             # print(found_char)
-    #             if found_char == self.vocab[self.end_char]:
-    #                 end_found = True
-    #             inp = add_cuda_to_variable([predicted[-1]], self.use_gpu)
-    #
-    #     strlist = [self.vocab.keys()[self.vocab.values().index(pred)] for pred in predicted]
-    #     return (''.join(strlist).replace(self.pad_char, '')).replace(self.start_char, '').replace(self.end_char, '')
