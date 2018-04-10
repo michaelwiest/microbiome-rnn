@@ -1,2 +1,12 @@
 # microbiome_rnn
 RNN for predicting OTU counts of organisms from human gut microbiome.
+
+## Usage
+`python trainer.py`
+
+## Structure
+General structure of the network is a few fully connected layers to reduce the dimensionality of the input. That is then fed to an LSTM. Following the LSTM there are more fully connected layers to expand the dimensionality back to the original dimensions.
+
+
+## Notes
+As of now, the rolling mean values generate better predictions as they are less "spikey" than the raw values.

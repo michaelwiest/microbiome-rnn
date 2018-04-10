@@ -18,13 +18,12 @@ seq_len = 6
 # If this value is below one then it increases by that percent
 # every epoch. If greater than one then it increases by that fixed
 # amount after every epoch.
-slice_incr_amt = 1
+slice_incr_amt = 2
 otu_handler = OTUHandler([
                           # 'data/gut_A_subset_5.csv',
-                          'data/gut_A_subset_5_clr.csv',
-                          # 'data/gut_A_subset_5_smooth_clr.csv'
+                          'subsetted_data/gut_A_subset_5_clr.csv',
                           # 'data/gut_B_subset_5.csv'
-                          'data/gut_B_subset_5_clr.csv'
+                          'subsetted_data/gut_B_subset_5_clr.csv'
                           ])
 otu_handler.set_train_val()
 
