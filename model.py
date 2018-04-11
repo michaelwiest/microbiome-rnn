@@ -171,3 +171,17 @@ class LSTM(nn.Module):
                 print('Saved model state to: {}'.format(save_params[0]))
 
         return train_loss_vec, val_loss_vec
+
+    def daydream(self, primer, T, predict_len=100, window_size=20):
+        self.batch_size = 1
+
+        self.__init_hidden()
+
+        predicted = add_cuda_to_variable(primer_input, self.use_gpu)
+
+        for p in range(predict_len):
+            inp = add_cuda_to_variable(predicted[-window_size:], self.use_gpu)
+            output = self.__forward(inp)[-1]
+            predicted.append(output)
+
+        return predicted.data.numpy()
