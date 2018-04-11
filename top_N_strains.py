@@ -47,7 +47,7 @@ def load_data(file_to_read, subset=False, fraction_to_keep=0.05, index=None):
 f1 = sys.argv[1]
 f2 = sys.argv[2]
 N_strains = int(sys.argv[3])
-data_dir = 'data'
+data_dir = 'subsetted_data'
 abroad = [71, 122]
 rolling_window = 25
 

@@ -9,16 +9,16 @@ log_dir = 'logs'
 
 
 batch_size = 30
-hidden_dim = 100
-samples_per_epoch = 100000
+hidden_dim = 32
+samples_per_epoch = 500000
 num_epochs = 15
 learning_rate = 0.0005
-seq_len = 6
+seq_len = 3
 
 # If this value is below one then it increases by that percent
 # every epoch. If greater than one then it increases by that fixed
 # amount after every epoch.
-slice_incr_amt = 2
+slice_incr_amt = 1
 otu_handler = OTUHandler([
                           # 'data/gut_A_subset_5.csv',
                           'subsetted_data/gut_A_subset_5_clr.csv',
