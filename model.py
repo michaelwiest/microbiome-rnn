@@ -8,7 +8,7 @@ import torch.optim as optim
 import torchvision
 import random
 import numpy as np
-from helper import *
+from helpers.model_helper import *
 import csv
 
 

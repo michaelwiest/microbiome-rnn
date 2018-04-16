@@ -1,6 +1,8 @@
 # Project specific
 models/*
 logs/*
+from_qiita/*
+reference_data/*
 
 
 # Byte-compiled / optimized / DLL files
