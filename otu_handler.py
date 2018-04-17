@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+'''
+Class for handling OTU data. It generates samples and keeps track of
+training and validation data.
+'''
 class OTUHandler(object):
     def __init__(self, files):
         self.samples = []
@@ -12,6 +16,11 @@ class OTUHandler(object):
         self.train_data = None
         self.val_data = None
 
+    '''
+    Set the training and validation data for each sample. Need to add
+    a minimum threshold in here for having validation from a sample (ie, if
+    sample is too small).
+    '''
     def set_train_val(self, percent=0.8):
         self.train_data = []
         self.val_data = []
@@ -27,7 +36,10 @@ class OTUHandler(object):
         self.min_len = min(temp_sizes)
 
     '''
-    Returns data of shape N x num_organisms x slice_size
+    Returns data of shape N x num_organisms x slice_size. Selects N random
+    examples from all possible training samples. It selects from them evenly
+    at the moment, but this can be tweaked to select more often from larger
+    samples.
     '''
     def get_N_samples_and_targets(self, N, slice_size, train=True):
         samples = []

@@ -6,13 +6,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
 import random
 import numpy as np
-from helper import *
+from helpers.model_helper import *
 import csv
 
+
+'''
+Model for predicting OTU counts of microbes given historical data.
+Uses fully connected layers and an LSTM (could use 1d convolutions in the
+future for better accuracy).
+
+As of now does not have a "dream" function for generating predictions from a
+seeded example.
+'''
 class LSTM(nn.Module):
     def __init__(self, hidden_dim, bs, otu_handler,
                  use_gpu=False,
@@ -23,8 +30,18 @@ class LSTM(nn.Module):
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
         self.lstm = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-        # The linear layer maps from hidden state space to target space
-        # target space = vocab size, or number of unique characters in daa
+
+        # Compression layers from raw number of inputs to reduced number
+        self.before_lstm = nn.Sequential(
+            nn.Linear(self.otu_handler.num_strains, hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, LSTM_in_size),
+            # nn.BatchNorm1d(self.otu_handler.num_strains)
+            # nn.Tanh(),
+        )
+        # Expansion layers from reduced number to raw number of strains
         self.after_lstm = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
@@ -33,14 +50,7 @@ class LSTM(nn.Module):
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             nn.Tanh()
         )
-        self.before_lstm = nn.Sequential(
-            nn.Linear(self.otu_handler.num_strains, LSTM_in_size),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
-            # nn.Linear(hidden_dim, LSTM_in_size),
-            # nn.BatchNorm1d(self.otu_handler.num_strains)
-            # nn.Tanh(),
-        )
+
 
         # Non-torch inits.
         self.batch_size = bs
@@ -59,8 +69,12 @@ class LSTM(nn.Module):
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
         if self.use_gpu:
-            self.hidden = (Variable(torch.zeros(1, self.batch_size, self.hidden_dim).cuda()),
-                    Variable(torch.zeros(1, self.batch_size, self.hidden_dim).cuda()))
+            self.hidden = (Variable(torch.zeros(1,
+                                                self.batch_size,
+                                                self.hidden_dim).cuda()),
+                           Variable(torch.zeros(1,
+                                                self.batch_size,
+                                                self.hidden_dim).cuda()))
         else:
             self.hidden = (Variable(torch.zeros(1,
                                                 self.batch_size,
@@ -91,10 +105,11 @@ class LSTM(nn.Module):
             iterate = 0
 
             '''
-            Visit each possible example once. Can maybe tweak this to be more
-            stochastic.
+            For a specified number of examples per epoch.
             '''
             for iterate in range(int(samples_per_epoch / self.batch_size)):
+
+                # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                       slice_len)
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
@@ -156,3 +171,17 @@ class LSTM(nn.Module):
                 print('Saved model state to: {}'.format(save_params[0]))
 
         return train_loss_vec, val_loss_vec
+
+    def daydream(self, primer, T, predict_len=100, window_size=20):
+        self.batch_size = 1
+
+        self.__init_hidden()
+
+        predicted = add_cuda_to_variable(primer_input, self.use_gpu)
+
+        for p in range(predict_len):
+            inp = add_cuda_to_variable(predicted[-window_size:], self.use_gpu)
+            output = self.__forward(inp)[-1]
+            predicted.append(output)
+
+        return predicted.data.numpy()
