@@ -2,7 +2,8 @@ from otu_handler import OTUHandler
 from model import LSTM
 import torch
 import os
-
+import sys
+import pandas as pd
 # Constant stuff
 model_dir = 'models'
 log_dir = 'logs'
@@ -19,13 +20,21 @@ seq_len = 3
 # every epoch. If greater than one then it increases by that fixed
 # amount after every epoch.
 slice_incr_amt = 1
-otu_handler = OTUHandler([
-                          # 'data/gut_A_subset_5.csv',
-                          'subsetted_data/gut_A_subset_5_clr.csv',
-                          # 'data/gut_B_subset_5.csv'
-                          'subsetted_data/gut_B_subset_5_clr.csv'
-                          ])
+
+# Read in our data
+input_dir = sys.argv[1]
+files = []
+for (dirpath, dirnames, filenames) in os.walk(input_dir):
+    files.extend(filenames)
+    break
+files = [os.path.join(input_dir, f) for f in files if f.endswith('_clr.csv')]
+
+# Generate the data handler object
+otu_handler = OTUHandler(files)
+
+# Set train and validation split
 otu_handler.set_train_val()
+otu_handler.get_N_samples_and_targets(10, 5)
 
 use_gpu = torch.cuda.is_available()
 

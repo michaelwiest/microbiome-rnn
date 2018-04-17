@@ -47,7 +47,15 @@ class OTUHandler(object):
         if self.train_data is None:
             raise AttributeError('Please specify train and val data before '
                                  'calling this function.')
-        which_samples = np.random.randint(len(self.samples), size=N)
+
+        # Samples from data based on number of samples. Ie, samples with more
+        # data points get more selection.
+        rands = np.random.rand(N)
+        all_sum = np.sum([df.shape[1] for df in self.train_data])
+        bins = np.cumsum([df.shape[1] / all_sum for df in self.train_data])
+        which_samples = np.argmin(np.abs([bins - rand for rand in rands]),
+                                  axis=1)
+
         for ws in which_samples:
             if train:
                 sample = self.train_data[ws]
@@ -56,7 +64,6 @@ class OTUHandler(object):
             start_index = np.random.randint(sample.shape[1] - slice_size)
             data = sample.iloc[:, start_index: start_index + slice_size].values
             target = sample.iloc[:, start_index + slice_size].values
-            # target = sample.iloc[:, start_index + 1: start_index + slice_size + 1].values
             samples.append(data)
             targets.append(target)
         return np.array(samples), np.array(targets)
