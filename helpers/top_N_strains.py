@@ -2,6 +2,7 @@ import pandas as pd
 import sys
 import numpy as np
 from os import walk
+
 from skbio.stats.composition import clr, ilr
 from sklearn import cluster, covariance, manifold, decomposition, preprocessing
 import os
@@ -10,11 +11,11 @@ import os
 Takes the most prolific N strains from all the argument files.
 Because there are instances where the taxonomy is repeated for a given file,
 this takes the strain with the highest counts and uses that one.
+
 '''
 
 def load_data(file_to_read, subset=False, fraction_to_keep=0.05, index=None):
     otu_table = pd.read_csv(file_to_read, header=0, index_col=0)
-    print(file_to_read)
     otu_table['mean'] = otu_table.mean(axis=1)
     otu_table.sort_values(by='mean', ascending=False, inplace=True)
     if subset:
@@ -65,10 +66,11 @@ i = 1
 while strains is None:
     indices = [set(otu.head(i).index.values) for otu in raws]
     intersection = set.intersection(*indices)
+
     if len(intersection) >= N_strains:
         strains = list(intersection)
     i += 1
-
+    
 for i in range(len(clrs)):
     # Select only the rows with appropriate strains
     # These are all of the first occurences of each strain selected above.
@@ -91,3 +93,4 @@ for i in range(len(clrs)):
     clr_fname = ''.join(files[i].split('.')[:-1]) + '_sub_{}_clr.csv'.format(N_strains)
     raws[i].to_csv(os.path.join(output_dir, raw_fname))
     clrs[i].to_csv(os.path.join(output_dir, clr_fname))
+
