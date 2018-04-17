@@ -2,7 +2,9 @@
 models/*
 logs/*
 from_qiita/*
+from_qiita2/*
 reference_data/*
+subsetted_data/*
 
 
 # Byte-compiled / optimized / DLL files
