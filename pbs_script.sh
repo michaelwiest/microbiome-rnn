@@ -23,10 +23,10 @@
 # Any directives placed after the first shell command will be ignored.
 
 ### Set the job name
-#PBS -N myjob
+#PBS -N mw-rnn
 
 ### Run in the queue named "batch"
-#PBS -q batch
+#PBS -q mw-batch
 
 ### Use the bourne shell
 #PBS -S /bin/sh
@@ -98,3 +98,4 @@ echo Using ${NPROCS} processors across ${NNODES} nodes
 # $PBS_O_WORKDIR   the absolute path of the current working directory of the qsub command
 #
 # End of example PBS script
+python trainer.py
