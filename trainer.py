@@ -13,7 +13,7 @@ batch_size = 30
 hidden_dim = 32
 samples_per_epoch = 500000
 num_epochs = 15
-learning_rate = 0.0005
+learning_rate = 0.0001
 seq_len = 3
 
 # If this value is below one then it increases by that percent
@@ -32,9 +32,9 @@ files = [os.path.join(input_dir, f) for f in files if f.endswith('_clr.csv')]
 # Generate the data handler object
 otu_handler = OTUHandler(files)
 
+
 # Set train and validation split
 otu_handler.set_train_val()
-otu_handler.get_N_samples_and_targets(10, 5)
 
 use_gpu = torch.cuda.is_available()
 

@@ -34,18 +34,20 @@ class LSTM(nn.Module):
         # Compression layers from raw number of inputs to reduced number
         self.before_lstm = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, hidden_dim),
-            nn.Linear(hidden_dim, hidden_dim),
+            # nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.Tanh(),
+            nn.Dropout(0.2),
             nn.Linear(hidden_dim, LSTM_in_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
-            # nn.Tanh(),
+            nn.Tanh()
         )
         # Expansion layers from reduced number to raw number of strains
         self.after_lstm = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.Tanh(),
+            nn.Dropout(0.2),
             nn.Linear(hidden_dim, self.otu_handler.num_strains),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             nn.Tanh()
