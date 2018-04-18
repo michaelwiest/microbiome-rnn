@@ -17,7 +17,7 @@
 # qsub -V myjob-pbs.sh
 #
 # or uncomment the following line by removing the initial ``###''
-### #PBS -V
+#PBS -V
 
 # Note: group all PBS directives at the beginning of your script.
 # Any directives placed after the first shell command will be ignored.
