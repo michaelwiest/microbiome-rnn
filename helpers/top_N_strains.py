@@ -4,6 +4,7 @@ import numpy as np
 from os import walk
 
 from skbio.stats.composition import clr, ilr
+from scipy.stats.mstats import gmean
 from sklearn import cluster, covariance, manifold, decomposition, preprocessing
 import os
 
@@ -41,12 +42,15 @@ def load_data(file_to_read, subset=False, fraction_to_keep=0.05, index=None):
 input_dir = sys.argv[1]
 N_strains = int(sys.argv[2])
 output_dir = 'subsetted_data'
+gmeans_dir = 'geometric_means'
 rolling_window = 25  # Configurable for smoothing
 
 # Get each file
 raws = []
 clrs = []
 files = []
+# Geometric means for transforming CLRs back to raw OTU counts
+gmeans = []
 for (dirpath, dirnames, filenames) in walk(input_dir):
     files.extend(filenames)
     break
@@ -70,7 +74,7 @@ while strains is None:
     if len(intersection) >= N_strains:
         strains = list(intersection)
     i += 1
-    
+
 for i in range(len(clrs)):
     # Select only the rows with appropriate strains
     # These are all of the first occurences of each strain selected above.
@@ -88,9 +92,21 @@ for i in range(len(clrs)):
     if rolling_window is not None:
         clrs[i] = clrs[i].rolling(rolling_window, axis=1, min_periods=1).mean()
         raws[i] = raws[i].rolling(rolling_window, axis=1, min_periods=1).mean()
+
     # Write the values
     raw_fname = ''.join(files[i].split('.')[:-1]) + '_sub_{}.csv'.format(N_strains)
     clr_fname = ''.join(files[i].split('.')[:-1]) + '_sub_{}_clr.csv'.format(N_strains)
+
     raws[i].to_csv(os.path.join(output_dir, raw_fname))
     clrs[i].to_csv(os.path.join(output_dir, clr_fname))
 
+    gm = np.array(gmean(raws[i], axis=1))
+    gm = pd.DataFrame(np.expand_dims(gm, axis=0),
+                      index=[raw_fname],
+                      columns=list(raws[i].index.values)
+                      )
+    gmeans.append(gm)
+
+pd.concat(gmeans).to_csv(os.path.join(gmeans_dir,
+                                      '{}_gmeams.csv'.format(N_strains)
+                                      ))
