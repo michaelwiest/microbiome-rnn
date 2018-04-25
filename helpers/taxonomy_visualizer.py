@@ -1,0 +1,40 @@
+import sys
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
+
+default_tax = ['k__', 'p__', 'c__', 'o__', 'f__', 'g__', 's__']
+levels = 5
+
+def complete_and_multiindex_df(df):
+    s = list(df.index.values)
+    lt = [list(ls.split(';')) for ls in s]
+    for l in lt:
+        if len(l) < len(default_tax):
+            l += default_tax[-(len(default_tax)-len(l)):]
+
+    ltn = pd.DataFrame(np.array(lt))
+    ltn.index = df.index
+    ltn.columns = default_tax
+    combined = pd.concat((df, ltn), axis=1)
+    combined.set_index(default_tax, inplace=True)
+    return combined
+
+df = pd.read_csv(sys.argv[1], index_col=0)
+combined = complete_and_multiindex_df(df)
+counts = combined.groupby(level=list(range(levels))).count()
+
+cv = list(counts.values[:, 0])
+labels = [';'.join(c) for c in counts.index]
+fig, ax = plt.subplots()
+bar_width = 0.35
+rects1 = ax.bar(np.arange(len(cv)), cv, bar_width)
+ax.set_xticks(np.arange(len(cv)) + bar_width / 2)
+ax.set_xticklabels(labels,
+                   rotation=45,
+                   ha='right',
+                   fontsize=8)
+plt.ylabel('Strain Count')
+plt.title('Count of Strain taxonomies')
+plt.show()
