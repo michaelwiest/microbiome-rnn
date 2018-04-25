@@ -4,10 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
 
-default_tax = ['k__', 'p__', 'c__', 'o__', 'f__', 'g__', 's__']
-levels = 5
 
 def complete_and_multiindex_df(df):
+    default_tax = ['k__', 'p__', 'c__', 'o__', 'f__', 'g__', 's__']
     s = list(df.index.values)
     lt = [list(ls.split(';')) for ls in s]
     for l in lt:
@@ -21,20 +20,27 @@ def complete_and_multiindex_df(df):
     combined.set_index(default_tax, inplace=True)
     return combined
 
-df = pd.read_csv(sys.argv[1], index_col=0)
-combined = complete_and_multiindex_df(df)
-counts = combined.groupby(level=list(range(levels))).count()
 
-cv = list(counts.values[:, 0])
-labels = [';'.join(c) for c in counts.index]
-fig, ax = plt.subplots()
-bar_width = 0.35
-rects1 = ax.bar(np.arange(len(cv)), cv, bar_width)
-ax.set_xticks(np.arange(len(cv)) + bar_width / 2)
-ax.set_xticklabels(labels,
-                   rotation=45,
-                   ha='right',
-                   fontsize=8)
-plt.ylabel('Strain Count')
-plt.title('Count of Strain taxonomies')
-plt.show()
+def main():
+    levels = 5
+    df = pd.read_csv(sys.argv[1], index_col=0)
+    combined = complete_and_multiindex_df(df)
+    counts = combined.groupby(level=list(range(levels))).count()
+
+    cv = list(counts.values[:, 0])
+    labels = [';'.join(c) for c in counts.index]
+    fig, ax = plt.subplots()
+    bar_width = 0.35
+    rects1 = ax.bar(np.arange(len(cv)), cv, bar_width)
+    ax.set_xticks(np.arange(len(cv)) + bar_width / 2)
+    ax.set_xticklabels(labels,
+                       rotation=45,
+                       ha='right',
+                       fontsize=8)
+    plt.ylabel('Strain Count')
+    plt.title('Count of Strain taxonomies')
+    plt.show()
+
+
+if __name__ == '__main__':
+    main()
