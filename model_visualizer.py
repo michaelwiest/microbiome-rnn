@@ -10,8 +10,10 @@ import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
 from helpers.taxonomy_visualizer import complete_and_multiindex_df
 
-
-def plot_scatter_from_weights(weights, otu_handler, taxonomy_depth=4):
+'''
+Plots the transformed weights onto a scatter plot.
+'''
+def plot_scatter_from_weights(weights, otu_handler, pca, taxonomy_depth=4):
     ind = list(otu_handler.samples[0].index.values)
     ind = np.array([';'.join(i.split(';')[:taxonomy_depth]) for i in ind])
     ind_sub = np.array(list(set(ind)))
@@ -23,14 +25,17 @@ def plot_scatter_from_weights(weights, otu_handler, taxonomy_depth=4):
     ax.set_color_cycle([cm(1.*i/len(ind_sub)) for i in range(len(ind_sub))])
     for i in range(len(ind_sub)):
         bools = (ind_sub[i] == ind)
-        sub = trans[bools, :]
-        plt.scatter(sub[:, 0], sub[:, 1], label=ind_sub[i])
-        print(ind_sub[i])
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        sub = weights[bools, :]
+        plt.scatter(sub[:, 0], sub[:, 1], label=ind_sub[i], alpha=0.7)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
               fancybox=True, shadow=True, ncol=2, fontsize=6)
+    plt.xlabel('PC0 ({}%)'.format(str(pca.explained_variance_ratio_[0])[:5]))
+    plt.ylabel('PC1 ({}%)'.format(str(pca.explained_variance_ratio_[1])[:5]))
+    plt.title('Reduced Dimensionality Hidden Weights\nOf Neural Network')
     plt.show()
 
 def main():
+    # Not really used. Just for instantiating the model.
     batch_size = 30
     hidden_dim = 32
 
@@ -58,9 +63,9 @@ def main():
     print(rnn)
     pca = PCA(n_components=2)
     trans = pca.fit_transform(np.array(rnn.before_lstm[0].weight.data).T)
-    plot_scatter_from_weights(trans, otu_handler, 4)
+    plot_scatter_from_weights(trans, otu_handler, pca, 4)
     trans = pca.fit_transform(np.array(rnn.after_lstm[3].weight.data))
-    plot_scatter_from_weights(trans, otu_handler, 4)
+    plot_scatter_from_weights(trans, otu_handler, pca, 4)
 
 
 if __name__ == '__main__':
