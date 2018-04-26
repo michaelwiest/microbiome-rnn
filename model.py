@@ -115,7 +115,7 @@ class LSTM(nn.Module):
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                       slice_len)
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-
+                print(data.size())
                 targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
                 # Pytorch accumulates gradients. We need to clear them out before each instance
                 self.zero_grad()
@@ -174,16 +174,20 @@ class LSTM(nn.Module):
 
         return train_loss_vec, val_loss_vec
 
-    def daydream(self, primer, T, predict_len=100, window_size=20):
+    def daydream(self, primer, T, predict_len=100, window_size=10,
+                 init_hidden=True):
         self.batch_size = 1
-
         self.__init_hidden()
 
-        predicted = add_cuda_to_variable(primer_input, self.use_gpu)
-
+        predicted = primer
         for p in range(predict_len):
-            inp = add_cuda_to_variable(predicted[-window_size:], self.use_gpu)
-            output = self.__forward(inp)[-1]
-            predicted.append(output)
+            inp = add_cuda_to_variable(predicted, self.use_gpu) \
+                    .unsqueeze(-1) \
+                    .transpose(0, 2) \
+                    .transpose(0, 1)[-window_size:, :, :]
+            output = self.__forward(inp)[-1].transpose(0,1).data.numpy()
+            predicted = np.concatenate((predicted, output), axis=1)
+            if init_hidden:
+                self.__init_hidden()
 
-        return predicted.data.numpy()
+        return predicted

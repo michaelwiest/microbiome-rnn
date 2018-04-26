@@ -2,13 +2,14 @@ from __future__ import print_function
 import os
 import torch
 import sys
-# sys.path.append("..")
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 from otu_handler import OTUHandler
 from model import *
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
-from helpers.taxonomy_visualizer import complete_and_multiindex_df
+
 
 '''
 Plots the transformed weights onto a scatter plot.
@@ -60,7 +61,6 @@ def main():
 
     # Load in the trained model data.
     rnn.load_state_dict(torch.load(sys.argv[2]))
-    print(rnn)
     pca = PCA(n_components=2)
     trans = pca.fit_transform(np.array(rnn.before_lstm[0].weight.data).T)
     plot_scatter_from_weights(trans, otu_handler, pca, 4)

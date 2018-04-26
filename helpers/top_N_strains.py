@@ -104,7 +104,7 @@ def main():
 
         gm = np.array(gmean(raws[i], axis=1))
         gm = pd.DataFrame(np.expand_dims(gm, axis=0),
-                          index=[raw_fname],
+                          index=[raw_fname[:-4]],
                           columns=list(raws[i].index.values)
                           )
         gmeans.append(gm)
