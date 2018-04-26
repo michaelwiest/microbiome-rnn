@@ -23,10 +23,10 @@
 # Any directives placed after the first shell command will be ignored.
 
 ### Set the job name
-#PBS -N mw-rnn
+# PBS -N mw-rnn
 
 ### Run in the queue named "batch"
-#PBS -q mw-batch
+# PBS -q mw-batch
 
 ### Use the bourne shell
 #PBS -S /bin/sh
