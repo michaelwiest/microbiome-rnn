@@ -37,7 +37,7 @@ class LSTM(nn.Module):
             # nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.Tanh(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.4),
             nn.Linear(hidden_dim, LSTM_in_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             nn.Tanh()
@@ -47,10 +47,14 @@ class LSTM(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.Tanh(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.4),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.4),
             nn.Linear(hidden_dim, self.otu_handler.num_strains),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
-            nn.Tanh()
+            # nn.Tanh()
         )
 
 
