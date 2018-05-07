@@ -42,9 +42,10 @@ def load_data(file_to_read, subset=False, fraction_to_keep=0.05, index=None):
 def main():
     # Basic variables
     input_dir = sys.argv[1]
-    N_strains = int(sys.argv[2])
-    output_dir = 'subsetted_data'
-    gmeans_dir = 'geometric_means'
+    output_dir = sys.argv[2]
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    N_strains = int(sys.argv[3])
     rolling_window = 25  # Configurable for smoothing
 
     # Get each file
@@ -102,15 +103,15 @@ def main():
         raws[i].to_csv(os.path.join(output_dir, raw_fname))
         clrs[i].to_csv(os.path.join(output_dir, clr_fname))
 
-        gm = np.array(gmean(raws[i], axis=1))
-        gm = pd.DataFrame(np.expand_dims(gm, axis=0),
-                          index=[raw_fname[:-4]],
-                          columns=list(raws[i].index.values)
-                          )
-        gmeans.append(gm)
+        # gm = np.array(gmean(raws[i], axis=1))
+        # gm = pd.DataFrame(np.expand_dims(gm, axis=0),
+        #                   index=[raw_fname[:-4]],
+        #                   columns=list(raws[i].index.values)
+        #                   )
+        # gmeans.append(gm)
 
-    pd.concat(gmeans).to_csv(os.path.join(gmeans_dir,
-                                          '{}_gmeams.csv'.format(N_strains)
-                                          ))
+    # pd.concat(gmeans).to_csv(os.path.join(gmeans_dir,
+    #                                       '{}_gmeams.csv'.format(N_strains)
+    #                                       ))
 if __name__ == '__main__':
     main()

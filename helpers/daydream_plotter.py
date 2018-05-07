@@ -31,6 +31,7 @@ for (dirpath, dirnames, filenames) in os.walk(input_dir):
 files = [os.path.join(input_dir, f) for f in files if f.endswith('_clr.csv')]
 
 # Generate the data handler object
+# print(files)
 otu_handler = OTUHandler(files)
 
 # Set train and validation split
@@ -40,11 +41,12 @@ use_gpu = torch.cuda.is_available()
 # Get the model
 rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
            LSTM_in_size=10)
-
+rnn.load_state_dict(torch.load(sys.argv[5]))
 dream = rnn.daydream(primer, 1, 300)
 
 print(dream.shape)
 print(clr_df.shape)
-plt.plot(clr_df.values[:3, time_point_index - time_window:].T)
-plt.plot(dream[:3, :].T)
+plot_len = 30
+plt.plot(clr_df.values[:3, time_point_index - time_window:time_point_index - time_window + plot_len].T)
+plt.plot(dream[:3, :plot_len].T)
 plt.show()
