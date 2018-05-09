@@ -84,4 +84,10 @@ class OTUHandler(object):
             targets.append(target)
             gmeans.append(gm)
 
-        return np.array(samples), np.array(targets), np.array(gmeans)
+        samples = np.array(samples)
+        targets = np.array(targets)
+        # Expand the dimensions of the gmeans to match that of the samples.
+        axis_to_add = len(samples.shape) - 1
+        gmeans = np.expand_dims(gmeans, axis_to_add)#.repeat(slice_size,
+                                                    #        axis=axis_to_add)
+        return samples, targets, gmeans

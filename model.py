@@ -115,8 +115,17 @@ class LSTM(nn.Module):
             for iterate in range(int(samples_per_epoch / self.batch_size)):
 
                 # Select a random sample from the data handler.
-                data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                data, targets, gmeans = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                       slice_len)
+
+                # Prefix the data with the geometric means. This may not work
+                # for predicting very long sequences because the model may
+                # forget.
+                data = np.dstack((gmeans, data))
+                # Transpose
+                #   from: batch x num_strains x sequence_size
+                #   to: sequence_size x batch x num_strains
+
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                 targets = add_cuda_to_variable(targets, self.use_gpu)
                 self.zero_grad()
@@ -144,8 +153,9 @@ class LSTM(nn.Module):
                 # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
                     print('Loss ' + str(loss.data[0] / self.batch_size))
-                    data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                    data, targets, gmeans = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           slice_len, train=False)
+                    data = np.dstack((gmeans, data))
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                     targets = add_cuda_to_variable(targets, self.use_gpu)
 

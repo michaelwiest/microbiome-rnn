@@ -27,7 +27,7 @@ files = []
 for (dirpath, dirnames, filenames) in os.walk(input_dir):
     files.extend(filenames)
     break
-files = [os.path.join(input_dir, f) for f in files if f.endswith('_clr.csv')]
+files = [os.path.join(input_dir, f) for f in files if not f.endswith('_clr.csv')]
 
 # Generate the data handler object
 otu_handler = OTUHandler(files)
@@ -39,7 +39,7 @@ otu_handler.set_train_val()
 use_gpu = torch.cuda.is_available()
 
 rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
-           LSTM_in_size=10)
+           LSTM_in_size=5)
 
 model_name = 'model.pt'
 log_name = 'log.csv'
