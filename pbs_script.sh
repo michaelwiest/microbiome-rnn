@@ -97,5 +97,6 @@ echo Using ${NPROCS} processors across ${NNODES} nodes
 # $PBS_O_QUEUE     the name of the original queue to which the job was submitted
 # $PBS_O_WORKDIR   the absolute path of the current working directory of the qsub command
 #
-# End of example PBS script
-python trainer.py
+
+# Actually call the trainer.
+python trainer.py subsetted_15 # Put the directory here
