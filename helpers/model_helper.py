@@ -5,9 +5,10 @@ import torch
 
 def add_cuda_to_variable(data_nums, is_gpu):
     tensor = torch.FloatTensor(data_nums)
-    if isinstance(data_nums, list):
-        tensor = tensor.unsqueeze_(0)
-    tensor = tensor.unsqueeze_(2)
+    if len(tensor.size()) == 1:
+        tensor = tensor.unsqueeze_(0).unsqueeze(0).transpose(0, 2)
+    else:
+        tensor = tensor.unsqueeze_(len(tensor.size()))
     if is_gpu:
         return Variable(tensor.cuda())[:, :, 0]
     else:

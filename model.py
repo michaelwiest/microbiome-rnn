@@ -67,9 +67,8 @@ class LSTM(nn.Module):
         # input_data is shape: sequence_size x batch x num_strains
         input_data = self.before_lstm(input_data)
         output, self.hidden = self.lstm(input_data, self.hidden)
-        # output = output.transpose(1, 2)
         output = self.after_lstm(output)
-        # print(output.size())
+
         return output
 
     def __init_hidden(self):
@@ -119,7 +118,7 @@ class LSTM(nn.Module):
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                       slice_len)
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                print(data.size())
+                # print(data.size())
                 targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
                 # Pytorch accumulates gradients. We need to clear them out before each instance
                 self.zero_grad()
@@ -128,10 +127,12 @@ class LSTM(nn.Module):
                 # detaching it from its history on the last instance.
                 self.__init_hidden()
 
+                # Do a forward pass of the model.
+                # Only keep the last prediction as that is what we are
+                # comparing against. Essentially treating everything up to
+                # that as a primer.
                 outputs = self.__forward(data)
-                # print(outputs.size())
                 outputs = outputs[-1, :, :]
-                # print(outputs.size())
                 loss = 0
                 for bat in range(batch_size):
                     # loss += loss_function(outputs[:, bat, :], targets[:, bat, :].squeeze(1))
@@ -179,19 +180,27 @@ class LSTM(nn.Module):
         return train_loss_vec, val_loss_vec
 
     def daydream(self, primer, T, predict_len=100, window_size=10,
-                 init_hidden=True):
+                 serial=True):
         self.batch_size = 1
         self.__init_hidden()
 
         predicted = primer
+        if serial:
+            inp = add_cuda_to_variable(predicted[:, :-1], self.use_gpu) \
+                .unsqueeze(-1) \
+                .transpose(0, 2) \
+                .transpose(0, 1)[-window_size:, :, :]
+            _ = self.__forward(inp)
         for p in range(predict_len):
-            inp = add_cuda_to_variable(predicted, self.use_gpu) \
-                    .unsqueeze(-1) \
-                    .transpose(0, 2) \
-                    .transpose(0, 1)[-window_size:, :, :]
+            if serial:
+                inp = add_cuda_to_variable(predicted[:, -1], self.use_gpu)
+            else:
+                inp = add_cuda_to_variable(predicted, self.use_gpu)
+            inp = inp.unsqueeze(-1).transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             output = self.__forward(inp)[-1].transpose(0,1).data.numpy()
             predicted = np.concatenate((predicted, output), axis=1)
-            if init_hidden:
+
+            if not serial:
                 self.__init_hidden()
 
         return predicted

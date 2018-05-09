@@ -1,6 +1,5 @@
 from __future__ import print_function
 import os
-import pdb
 import torch
 import sys
 sys.path.append(
@@ -31,7 +30,7 @@ def plot_scatter_from_weights(weights, otu_handler, pca, taxonomy_depth=4):
         sub = weights[bools, :]
         plt.scatter(sub[:, 0], sub[:, 1], label=ind_sub[i], alpha=0.7)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-              fancybox=True, shadow=True, ncol=2, fontsize=6)
+              fancybox=True, shadow=True, ncol=2, fontsize=8)
     plt.xlabel('PC0 ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[0])[:5]))
     plt.ylabel('PC1 ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[1])[:5]))
     plt.title('Reduced Dimensionality Hidden Weights\nOf Neural Network')
@@ -70,7 +69,6 @@ def main():
     # print(rnn.after_lstm)
     trans = pca.fit_transform(np.array(rnn.after_lstm[6].weight.data))
     plot_scatter_from_weights(trans, otu_handler, pca, 4)
-    pdb.set_trace()
 
 if __name__ == '__main__':
     main()
