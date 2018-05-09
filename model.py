@@ -99,7 +99,7 @@ class LSTM(nn.Module):
             self.cuda()
 
         loss_function = nn.MSELoss()
-        # Try Adagrad & RMSProp
+        # TODO: Try Adagrad & RMSProp
         optimizer = optim.Adam(self.parameters(), lr=lr)
 
         # For logging the data for plotting
@@ -109,18 +109,16 @@ class LSTM(nn.Module):
         for epoch in range(epochs):
             iterate = 0
 
-            '''
-            For a specified number of examples per epoch.
-            '''
+            # For a specified number of examples per epoch. This basically
+            # decides how many examples to do before increasing the length
+            # of the slice of data fed to the LSTM.
             for iterate in range(int(samples_per_epoch / self.batch_size)):
 
                 # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                       slice_len)
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                # print(data.size())
-                targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
-                # Pytorch accumulates gradients. We need to clear them out before each instance
+                targets = add_cuda_to_variable(targets, self.use_gpu)
                 self.zero_grad()
 
                 # Also, we need to clear out the hidden state of the LSTM,
@@ -131,44 +129,55 @@ class LSTM(nn.Module):
                 # Only keep the last prediction as that is what we are
                 # comparing against. Essentially treating everything up to
                 # that as a primer.
-                outputs = self.__forward(data)
-                outputs = outputs[-1, :, :]
+                outputs = self.__forward(data)[-1, :, :]
+
+                # For this round set our loss to zero and then compare
+                # accumulate losses for all of the batch examples.
+                # Finally step with the optimizer.
                 loss = 0
                 for bat in range(batch_size):
-                    # loss += loss_function(outputs[:, bat, :], targets[:, bat, :].squeeze(1))
                     loss += loss_function(outputs[bat, :], targets[bat, :])
-                    # print(loss.size())
                 loss.backward()
                 optimizer.step()
 
+                # Basiaclly do the same as above, but with validation data.
+                # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           slice_len, train=False)
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                    targets = add_cuda_to_variable(targets, self.use_gpu)#.transpose(1, 2).transpose(0, 1)
+                    targets = add_cuda_to_variable(targets, self.use_gpu)
 
                     self.__init_hidden()
                     outputs_val = self.__forward(data)
                     outputs_val = outputs_val[-1, :, :]
+
+                    # Get the loss associated with this validation data.
                     val_loss = 0
                     for bat in range(self.batch_size):
-                        # val_loss += loss_function(outputs_val[:, bat, :], targets[:, bat, :].squeeze(1))
                         val_loss += loss_function(outputs_val[bat, :], targets[bat, :])
                     val_loss_vec.append(val_loss.data[0] / self.batch_size)
                     train_loss_vec.append(loss.data[0] / self.batch_size)
-                    print('Validataion Loss ' + str(val_loss.data[0]/batch_size))
                 iterate += 1
+
             print('Completed Epoch ' + str(epoch))
 
+            # If we want to increase the slice of the data that we are
+            # training on then do so.
             if slice_incr is not None:
+                # Handle percentage increase or integer increase.
                 if slice_incr >= 1.0:
                     slice_len += slice_incr
                 else:
                     slice_len += slice_len * slice_incr_perc
+                # Make sure that the slice doesn't get longer than the
+                # amount of data we can feed to it. Could handle this with
+                # padding characters.
                 slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
                 print('Increased slice length to: {}'.format(slice_len))
 
+            # Save the model and logging information.
             if save_params is not None:
                 torch.save(self.state_dict(), save_params[0])
                 with open(save_params[1], 'w+') as csvfile:
@@ -179,12 +188,23 @@ class LSTM(nn.Module):
 
         return train_loss_vec, val_loss_vec
 
+    '''
+    Function for letting the LSTM "dream" up new data. Given a primer it will
+    generate examples for as long as specified.
+
+    The "serial" argument determines wheter or not examples are fed one
+    at a time to the LSTM with no gradient zeroing, or fed as a batch
+    and then zeroed everytime. serial=True has been giving better results.
+    '''
     def daydream(self, primer, T, predict_len=100, window_size=10,
                  serial=True):
         self.batch_size = 1
         self.__init_hidden()
 
         predicted = primer
+
+        # If we do it the serial way, then primer the model with all examples
+        # up to the most recent one.
         if serial:
             inp = add_cuda_to_variable(predicted[:, :-1], self.use_gpu) \
                 .unsqueeze(-1) \
@@ -197,7 +217,9 @@ class LSTM(nn.Module):
             else:
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
             inp = inp.unsqueeze(-1).transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
+            # Only keep the last predicted value.
             output = self.__forward(inp)[-1].transpose(0,1).data.numpy()
+            # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
             if not serial:

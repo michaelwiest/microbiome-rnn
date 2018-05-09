@@ -41,9 +41,11 @@ def main():
     batch_size = 30
     hidden_dim = 32
 
-    # Read in our data
     input_dir = sys.argv[1]
     model_name = sys.argv[2]
+    taxonomy_depth = int(sys.argv[3])
+
+    # Read in our data
     files = []
     for (dirpath, dirnames, filenames) in os.walk(input_dir):
         files.extend(filenames)
@@ -59,16 +61,16 @@ def main():
 
     # Get the model
     rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
-               LSTM_in_size=10)
+               LSTM_in_size=5)
 
     # Load in the trained model data.
     rnn.load_state_dict(torch.load(model_name))
     pca = PCA(n_components=2)
     trans = pca.fit_transform(np.array(rnn.before_lstm[0].weight.data).T)
-    plot_scatter_from_weights(trans, otu_handler, pca, 4)
+    plot_scatter_from_weights(trans, otu_handler, pca, taxonomy_depth)
     # print(rnn.after_lstm)
     trans = pca.fit_transform(np.array(rnn.after_lstm[6].weight.data))
-    plot_scatter_from_weights(trans, otu_handler, pca, 4)
+    plot_scatter_from_weights(trans, otu_handler, pca, taxonomy_depth)
 
 if __name__ == '__main__':
     main()
