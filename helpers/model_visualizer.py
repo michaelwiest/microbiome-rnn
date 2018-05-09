@@ -65,10 +65,14 @@ def main():
 
     # Load in the trained model data.
     rnn.load_state_dict(torch.load(model_name))
+
+    # Perform PCA
     pca = PCA(n_components=2)
+
+    # Plot the values from before the LSTM and also after.
+    # The indices below need to be changed based on model architecture.
     trans = pca.fit_transform(np.array(rnn.before_lstm[0].weight.data).T)
     plot_scatter_from_weights(trans, otu_handler, pca, taxonomy_depth)
-    # print(rnn.after_lstm)
     trans = pca.fit_transform(np.array(rnn.after_lstm[6].weight.data))
     plot_scatter_from_weights(trans, otu_handler, pca, taxonomy_depth)
 
