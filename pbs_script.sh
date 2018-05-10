@@ -99,4 +99,4 @@ echo Using ${NPROCS} processors across ${NNODES} nodes
 #
 
 # Actually call the trainer.
-python trainer.py subsetted_15 # Put the directory here
+python trainer.py subsetted_data_15 # Put the directory here
