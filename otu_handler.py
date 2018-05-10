@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-# from skbio.stats.composition import clr, ilr
+from skbio.stats.composition import clr, ilr
 from scipy.stats.mstats import gmean
 
 '''
@@ -76,10 +76,7 @@ class OTUHandler(object):
             # Get the geometric mean of the data sampled. This is for
             # a hacked CLR on the test examples.
             gm = gmean(data, axis=1)
-            # data = clr(data) # Perform CLR on the train data.
-            # This is a HACK that i'm using in absence of CLR from skbio.
-            gmt = np.expand_dims(gm, 1).repeat(slice_size, 1)
-            data = np.log(data / gmt)
+            data = clr(data) # Perform CLR on the train data.
             # Hacked CLR on the targets.
             target = np.log(sample.iloc[:, start_index + slice_size].values / gm)
             # Store all the values

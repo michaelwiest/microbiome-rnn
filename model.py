@@ -116,12 +116,12 @@ class LSTM(nn.Module):
 
                 # Select a random sample from the data handler.
                 data, targets, gmeans = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                      slice_len)
-
+                                                                                   slice_len)
                 # Prefix the data with the geometric means. This may not work
                 # for predicting very long sequences because the model may
                 # forget.
                 data = np.dstack((gmeans, data))
+
                 # Transpose
                 #   from: batch x num_strains x sequence_size
                 #   to: sequence_size x batch x num_strains
