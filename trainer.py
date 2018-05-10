@@ -28,6 +28,7 @@ for (dirpath, dirnames, filenames) in os.walk(input_dir):
     files.extend(filenames)
     break
 files = [os.path.join(input_dir, f) for f in files if not f.endswith('_clr.csv')]
+print(files)
 # Generate the data handler object
 otu_handler = OTUHandler(files)
 
