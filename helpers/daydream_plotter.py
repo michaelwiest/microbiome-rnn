@@ -53,8 +53,8 @@ def dream_and_plot(rnn, primer, comparison_fname,
                    time_point_index,
                    time_window,
                    gm,  # Geometric means
-                   num_strains=5,
-                   plot_len=50,
+                   num_strains=6,
+                   plot_len=100,
                    raw_plot=False):
 
     dream = rnn.daydream(primer, 1, 300, serial=False)
@@ -65,22 +65,31 @@ def dream_and_plot(rnn, primer, comparison_fname,
     else:
         df = pd.read_csv(comparison_fname + '_clr.csv', index_col=0)
 
+    strains = rnn.otu_handler.strains
     plt.figure(figsize=(18, 9))
-    to_plot = df.values[:num_strains, time_point_index - time_window:
-                               time_point_index - time_window + plot_len].T
-    plt.plot(to_plot,
-             label='Actual', linewidth=2
-             )
-    plt.gca().set_prop_cycle(None)
+    actual_vals = df.values[:, time_point_index - time_window:
+                               time_point_index - time_window + plot_len]
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-    plt.plot(dream[:num_strains, 1:plot_len].T, linestyle='--',
-             label='Predicted', linewidth=2)
+    for i in range(num_strains):
+        # Plot the actual values
+        plt.plot(actual_vals[i, :].T,
+                 color=colors[i],
+                 label='{}'.format(strains[i]), linewidth=2)
+        # Plot the predicted values.
+        plt.plot(dream[i, 1:plot_len],
+                 linestyle='--',
+                 linewidth=2,
+                 color=colors[i])
+
     plt.axvspan(0, time_window - 1, alpha=0.3, color='gray',
                 label='Priming Region', hatch='/')
-    plt.legend(loc='lower right')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+              fancybox=True, shadow=True, ncol=2, fontsize=9)
     plt.xlabel('Time')
     plt.ylabel('CLR(OTU)')
     plt.title('Predicted vs. Actual OTU Counts')
+    plt.tight_layout()
     plt.show()
 
 def main():

@@ -20,25 +20,24 @@ def complete_and_multiindex_df(df):
     combined.set_index(default_tax, inplace=True)
     return combined
 
-
 def main():
     levels = 5
     df = pd.read_csv(sys.argv[1], index_col=0)
     combined = complete_and_multiindex_df(df)
-    counts = combined.groupby(level=list(range(levels))).count()
+    counts = combined.groupby(level=list(range(levels))).mean()
 
     cv = list(counts.values[:, 0])
-    labels = [';'.join(c) for c in counts.index]
-    fig, ax = plt.subplots()
-    bar_width = 0.35
+    labels = ['\n'.join(c) for c in counts.index]
+    fig, ax = plt.subplots(figsize=(15, 7))
+    bar_width = 0.45
     rects1 = ax.bar(np.arange(len(cv)), cv, bar_width)
     ax.set_xticks(np.arange(len(cv)) + bar_width / 2)
     ax.set_xticklabels(labels,
-                       rotation=45,
                        ha='right',
                        fontsize=8)
     plt.ylabel('Strain Count')
-    plt.title('Count of Strain taxonomies')
+    plt.title('Average Count of Strain Taxonomies')
+    plt.tight_layout()
     plt.show()
 
 
