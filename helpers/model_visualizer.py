@@ -21,16 +21,15 @@ def plot_scatter_from_weights(weights, otu_handler, pca, taxonomy_depth=4):
     print('{} categories'.format(len(ind_sub)))
     cm = plt.get_cmap('tab20')
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,10))
     ax = fig.add_subplot(111)
     ax.set_color_cycle([cm(1.*i/len(ind_sub)) for i in range(len(ind_sub))])
-    print(weights.shape)
     for i in range(len(ind_sub)):
         bools = (ind_sub[i] == ind)
         sub = weights[bools, :]
         plt.scatter(sub[:, 0], sub[:, 1], label=ind_sub[i], alpha=0.7)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-              fancybox=True, shadow=True, ncol=2, fontsize=8)
+              fancybox=True, shadow=True, ncol=1, fontsize=8)
     plt.xlabel('PC0 ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[0])[:5]))
     plt.ylabel('PC1 ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[1])[:5]))
     plt.title('Reduced Dimensionality Hidden Weights\nOf Neural Network')
@@ -40,7 +39,7 @@ def plot_scatter_from_weights(weights, otu_handler, pca, taxonomy_depth=4):
 def main():
     # Not really used. Just for instantiating the model.
     batch_size = 30
-    hidden_dim = 32
+    hidden_dim = 64
 
     input_dir = sys.argv[1]
     model_name = sys.argv[2]

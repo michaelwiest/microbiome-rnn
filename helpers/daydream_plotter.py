@@ -49,6 +49,7 @@ def get_comparison_data(comparison_fname, time_point_index, time_window):
     primer = np.concatenate((gm, primer), axis=1)
     return primer, gm
 
+
 def dream_and_plot(rnn, primer, comparison_fname,
                    time_point_index,
                    time_window,
@@ -91,6 +92,7 @@ def dream_and_plot(rnn, primer, comparison_fname,
     plt.title('Predicted vs. Actual OTU Counts')
     plt.tight_layout()
     plt.show()
+
 
 def main():
     # Plot the CLR vals or the raw OTU vals.
