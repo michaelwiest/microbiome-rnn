@@ -8,8 +8,9 @@ def add_cuda_to_variable(data_nums, is_gpu):
     if len(tensor.size()) == 1:
         tensor = tensor.unsqueeze_(0).unsqueeze(0).transpose(0, 2)
     else:
-        tensor = tensor.unsqueeze_(len(tensor.size()))
+        pass
+        # tensor = tensor.unsqueeze_(len(tensor.size()))
     if is_gpu:
-        return Variable(tensor.cuda())[:, :, 0]
+        return Variable(tensor.cuda())
     else:
-        return Variable(tensor)[:, :, 0]
+        return Variable(tensor)
