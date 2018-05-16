@@ -8,7 +8,7 @@ from skbio.stats.composition import clr
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-from model import *
+from lstm import *
 from otu_handler import OTUHandler
 plt.style.use('fivethirtyeight')
 

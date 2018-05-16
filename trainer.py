@@ -1,5 +1,5 @@
 from otu_handler import OTUHandler
-from model import LSTM
+from lstm import LSTM
 import torch
 import os
 import sys
