@@ -66,7 +66,7 @@ class OTUHandler(object):
     def get_N_samples_and_targets(self, N, slice_size, train=True):
         samples = []  # Samples to feed to LSTM
         targets = []  # Single target to predict
-        gmeans = []  # Geometric means for weighting.
+        # gmeans = []  # Geometric means for weighting.
         if self.train_data is None:
             raise AttributeError('Please specify train and val data before '
                                  'calling this function.')
@@ -95,15 +95,15 @@ class OTUHandler(object):
             # gm = gmean(data, axis=1)
             # data = clr(data) # Perform CLR on the train data.
             # Hacked CLR on the targets.
-            target = sample.iloc[:, start_index + slice_size].values)
+            target = sample.iloc[:, start_index + slice_size].values
             # Store all the values
             samples.append(data)
             targets.append(target)
-            gmeans.append(gm)
+            # gmeans.append(gm)
 
         samples = np.array(samples)
         targets = np.array(targets)
         # Expand the dimensions of the gmeans to match that of the samples.
-        axis_to_add = len(samples.shape) - 1
-        gmeans = np.expand_dims(gmeans, axis_to_add)
-        return samples, targets, gmeans
+        # axis_to_add = len(samples.shape) - 1
+        # gmeans = np.expand_dims(gmeans, axis_to_add)
+        return samples, targets #, gmeans
