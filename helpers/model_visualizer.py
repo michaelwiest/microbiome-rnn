@@ -30,8 +30,8 @@ def plot_scatter_from_weights(weights, otu_handler, pca, taxonomy_depth=4):
         plt.scatter(sub[:, 0], sub[:, 1], label=ind_sub[i], alpha=0.7)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
               fancybox=True, shadow=True, ncol=1, fontsize=8)
-    plt.xlabel('PC0 ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[0])[:5]))
-    plt.ylabel('PC1 ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[1])[:5]))
+    plt.xlabel('PC$_0$ ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[0])[:5]))
+    plt.ylabel('PC$_1$ ({}%)'.format(str(100.0 * pca.explained_variance_ratio_[1])[:5]))
     plt.title('Reduced Dimensionality Hidden Weights\nOf Neural Network')
     plt.tight_layout()
     plt.show()
