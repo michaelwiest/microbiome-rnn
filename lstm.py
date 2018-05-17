@@ -120,7 +120,8 @@ class LSTM(nn.Module):
                 # Prefix the data with the geometric means. This may not work
                 # for predicting very long sequences because the model may
                 # forget.
-                data = np.dstack((gmeans, data))
+                
+                # data = np.dstack((gmeans, data))
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size

@@ -12,55 +12,31 @@ from helpers.model_helper import *
 import csv
 
 class FFN(nn.Module):
-    def __init__(self, hidden_dim, bs, otu_handler,
-                 use_gpu=False,
-                 LSTM_in_size=None):
+    def __init__(self, hidden_dim, bs, otu_handler, slice_len,
+                 use_gpu=False):
         super(FFN, self).__init__()
         self.hidden_dim = hidden_dim
         self.otu_handler = otu_handler
-        if LSTM_in_size is None:
-            LSTM_in_size = self.otu_handler.num_strains
-        self.lstm = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-
-        # Compression layers from raw number of inputs to reduced number
-        self.before_lstm = nn.Sequential(
-            nn.Linear(self.otu_handler.num_strains, hidden_dim),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, LSTM_in_size),
-            # nn.BatchNorm1d(self.otu_handler.num_strains)
-            nn.Tanh()
-        )
-        # Expansion layers from reduced number to raw number of strains
-        self.after_lstm = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, self.otu_handler.num_strains),
-            # nn.BatchNorm1d(self.otu_handler.num_strains)
-            # nn.Tanh()
-        )
-
-
-        # Non-torch inits.
+        self.slice_len = slice_len
         self.batch_size = bs
         self.use_gpu = use_gpu
         self.hidden = self.__init_hidden()
 
+        # Compression layers from raw number of inputs to reduced number
+        self.layers = nn.Sequential(
+            nn.Linear(self.otu_handler.num_strains, hidden_dim),
+            nn.BatchNorm1d(self.batch_size),
+            nn.ReLU(),
+            nn.Dropout(0.5)
+            )
+        self.final_layer = nn.Linear(self.hidden_dim *
+                                     self.slice_len,
+                                     self.otu_handler.num_strains)
+
     def __forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
-        input_data = self.before_lstm(input_data)
-        output, self.hidden = self.lstm(input_data, self.hidden)
-        output = self.after_lstm(output)
+        return self.final_layer(self.layers(input_data).view(self.batch_size, -1))
 
-        return output
 
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
@@ -80,7 +56,7 @@ class FFN(nn.Module):
                                                 self.hidden_dim))
                            )
 
-    def train(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
+    def train(self, batch_size, epochs, lr, samples_per_epoch,
               slice_incr=None, save_params=None):
 
         np.random.seed(1)
@@ -107,17 +83,12 @@ class FFN(nn.Module):
             for iterate in range(int(samples_per_epoch / self.batch_size)):
 
                 # Select a random sample from the data handler.
-                data, targets, gmeans = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                                   slice_len)
-                # Prefix the data with the geometric means. This may not work
-                # for predicting very long sequences because the model may
-                # forget.
-                data = np.dstack((gmeans, data))
+                data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                                                                                   self.slice_len)
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size
                 #   to: sequence_size x batch x num_strains
-
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                 targets = add_cuda_to_variable(targets, self.use_gpu)
                 self.zero_grad()
@@ -130,7 +101,7 @@ class FFN(nn.Module):
                 # Only keep the last prediction as that is what we are
                 # comparing against. Essentially treating everything up to
                 # that as a primer.
-                outputs = self.__forward(data)[-1, :, :]
+                outputs = self.__forward(data)
 
                 # For this round set our loss to zero and then compare
                 # accumulate losses for all of the batch examples.
@@ -145,15 +116,13 @@ class FFN(nn.Module):
                 # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
                     print('Loss ' + str(loss.data[0] / self.batch_size))
-                    data, targets, gmeans = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                          slice_len, train=False)
-                    data = np.dstack((gmeans, data))
+                    data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                                                                          self.slice_len, train=False)
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                     targets = add_cuda_to_variable(targets, self.use_gpu)
 
                     self.__init_hidden()
                     outputs_val = self.__forward(data)
-                    outputs_val = outputs_val[-1, :, :]
 
                     # Get the loss associated with this validation data.
                     val_loss = 0
@@ -164,20 +133,6 @@ class FFN(nn.Module):
                 iterate += 1
 
             print('Completed Epoch ' + str(epoch))
-
-            # If we want to increase the slice of the data that we are
-            # training on then do so.
-            if slice_incr is not None:
-                # Handle percentage increase or integer increase.
-                if slice_incr >= 1.0:
-                    slice_len += slice_incr
-                else:
-                    slice_len += slice_len * slice_incr_perc
-                # Make sure that the slice doesn't get longer than the
-                # amount of data we can feed to it. Could handle this with
-                # padding characters.
-                slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
-                print('Increased slice length to: {}'.format(slice_len))
 
             # Save the model and logging information.
             if save_params is not None:
