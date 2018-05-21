@@ -1,3 +1,4 @@
+import copy
 import pandas as pd
 import numpy as np
 from skbio.stats.composition import clr, ilr
@@ -12,11 +13,13 @@ class OTUHandler(object):
         self.samples = []
         for f in files:
             self.samples.append(pd.read_csv(f, index_col=0))
-
+        # Keep track of these for getting back and forth from normalized.
+        self.raw_samples = copy.deepcopy(samples)
         self.strains = list(self.samples[0].index.values)
         self.num_strains = len(self.strains)
         self.train_data = None
         self.val_data = None
+        self.normalization_method = None
 
     '''
     Set the training and validation data for each sample. Can include
@@ -45,8 +48,10 @@ class OTUHandler(object):
         if method not in ['zscore', 'clr']:
             raise AttributeError('Specify "zscore" or "clr" for method')
         if method == 'zscore':
+            self.normalization_method = 'zscore'
             m = zscore
         else:
+            self.normalization_method = 'clr'
             m = clr
         new_vals = []
         for s in self.samples:
@@ -106,4 +111,8 @@ class OTUHandler(object):
         # Expand the dimensions of the gmeans to match that of the samples.
         # axis_to_add = len(samples.shape) - 1
         # gmeans = np.expand_dims(gmeans, axis_to_add)
-        return samples, targets #, gmeans
+        return samples, targets
+
+
+    def plot_values(self, sample_indices, num_strains):
+        pass

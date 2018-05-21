@@ -20,15 +20,10 @@ class FFN(nn.Module):
         self.slice_len = slice_len
         self.batch_size = bs
         self.use_gpu = use_gpu
-        self.hidden = self.__init_hidden()
+        # self.hidden = self.__init_hidden()
 
         # Compression layers from raw number of inputs to reduced number
-        self.layers = nn.Sequential(
-            nn.Linear(self.otu_handler.num_strains, hidden_dim),
-            nn.BatchNorm1d(self.batch_size),
-            nn.ReLU(),
-            nn.Dropout(0.5)
-            )
+        self.__set_layers()
         self.final_layer = nn.Linear(self.hidden_dim *
                                      self.slice_len,
                                      self.otu_handler.num_strains)
@@ -38,23 +33,17 @@ class FFN(nn.Module):
         return self.final_layer(self.layers(input_data).view(self.batch_size, -1))
 
 
-    def __init_hidden(self):
-        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        if self.use_gpu:
-            self.hidden = (Variable(torch.zeros(1,
-                                                self.batch_size,
-                                                self.hidden_dim).cuda()),
-                           Variable(torch.zeros(1,
-                                                self.batch_size,
-                                                self.hidden_dim).cuda()))
-        else:
-            self.hidden = (Variable(torch.zeros(1,
-                                                self.batch_size,
-                                                self.hidden_dim)),
-                           Variable(torch.zeros(1,
-                                                self.batch_size,
-                                                self.hidden_dim))
-                           )
+    '''
+    Batch norm depends on the batch size which can be changed when doing
+    daydreaming. so need to set it like this.
+    '''
+    def __set_layers(self):
+        self.layers = nn.Sequential(
+            nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
+            nn.BatchNorm1d(self.batch_size),
+            nn.ReLU(),
+            nn.Dropout(0.5)
+            )
 
     def train(self, batch_size, epochs, lr, samples_per_epoch,
               slice_incr=None, save_params=None):
@@ -92,10 +81,6 @@ class FFN(nn.Module):
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                 targets = add_cuda_to_variable(targets, self.use_gpu)
                 self.zero_grad()
-
-                # Also, we need to clear out the hidden state of the LSTM,
-                # detaching it from its history on the last instance.
-                self.__init_hidden()
 
                 # Do a forward pass of the model.
                 # Only keep the last prediction as that is what we are
@@ -144,3 +129,22 @@ class FFN(nn.Module):
                 print('Saved model state to: {}'.format(save_params[0]))
 
         return train_loss_vec, val_loss_vec
+
+
+    '''
+    Function for letting the model "dream" up new data. Given a primer it will
+    generate examples for as long as specified.
+    '''
+    def daydream(self, primer, predict_len=100):
+        self.batch_size = 1
+        self.__set_layers()
+
+        predicted = primer
+        for p in range(predict_len):
+            inp = add_cuda_to_variable(predicted[:, -self.slice_len:], self.use_gpu)
+            inp = inp.unsqueeze(-1).transpose(0, 2).transpose(0, 1)
+            output = self.__forward(inp).transpose(0, 1).data.numpy()
+            # Add the new value to the values to be passed to the LSTM.
+            predicted = np.concatenate((predicted, output), axis=1)
+
+        return predicted

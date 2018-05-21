@@ -120,7 +120,7 @@ class LSTM(nn.Module):
                 # Prefix the data with the geometric means. This may not work
                 # for predicting very long sequences because the model may
                 # forget.
-                
+
                 # data = np.dstack((gmeans, data))
 
                 # Transpose
@@ -207,7 +207,7 @@ class LSTM(nn.Module):
     at a time to the LSTM with no gradient zeroing, or fed as a batch
     and then zeroed everytime. serial=True has been giving better results.
     '''
-    def daydream(self, primer, T, predict_len=100, window_size=10,
+    def daydream(self, primer, predict_len=100, window_size=10,
                  serial=True):
         self.batch_size = 1
         self.__init_hidden()
