@@ -14,7 +14,7 @@ batch_size = 30
 hidden_dim = 64
 samples_per_epoch = 500000
 num_epochs = 15
-learning_rate = 0.000005
+learning_rate = 0.0000005
 seq_len = 3
 reduced_num_strains = 5
 
