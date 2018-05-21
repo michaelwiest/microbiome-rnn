@@ -20,6 +20,7 @@ def get_model(model_file, input_dir,
               batch_size=30,
               hidden_dim=64,
               slice_len=20,
+              conv_filters=32,
               ffn=True):
     # Read in our data
     files = []
@@ -39,7 +40,7 @@ def get_model(model_file, input_dir,
 
     # Get the model
     if ffn:
-        m = FFN(hidden_dim, batch_size, otu_handler, slice_len)
+        m = FFN(hidden_dim, batch_size, otu_handler, slice_len, conv_filters)
     else:
         m = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
                    LSTM_in_size=5)
@@ -51,7 +52,7 @@ def get_comparison_data(model, comparison_index, time_point_index, time_window):
     d = model.otu_handler.val_data[comparison_index]
     primer = d.values[:, time_point_index - time_window: time_point_index]
     # gm = gmean(primer.T)
-    primer = zscore(primer)
+    # primer = zscore(primer)
     # gm = np.expand_dims(gm, 1)
 
     # primer = np.concatenate((gm, primer), axis=1)
@@ -68,9 +69,7 @@ def plot_comparison(model, comparison_index,
     strains = model.otu_handler.strains
     df = model.otu_handler.val_data[comparison_index]
     plt.figure(figsize=(18, 9))
-    av = df.values
-    av = zscore(av)
-    actual_vals = av[:, time_point_index - time_window:
+    actual_vals = df.values[:, time_point_index - time_window:
                      time_point_index - time_window + plot_len]
 
     for i in range(num_strains):
@@ -86,14 +85,15 @@ def main():
     input_dir = sys.argv[3]
     model_file = sys.argv[4]
     num_strains_to_plot = int(sys.argv[5])
+    comparison_file_index = int(sys.argv[6])
     plot_len = 100
 
     # rnn = get_model(model_file, input_dir)
     model = get_model(model_file, input_dir, ffn=True)
-    primer = get_comparison_data(model, 0, time_point_index,
+    primer = get_comparison_data(model, comparison_file_index, time_point_index,
                                  model.slice_len)
     dream = model.daydream(primer)
-    plot_comparison(model, 0, time_point_index, time_window,
+    plot_comparison(model, comparison_file_index, time_point_index, time_window,
                     num_strains=num_strains_to_plot, plot_len=plot_len)
 
     for i in range(num_strains_to_plot):
