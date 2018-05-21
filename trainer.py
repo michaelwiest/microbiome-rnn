@@ -60,6 +60,6 @@ save_params = (os.path.join(model_dir, model_name),
 #                                  slice_incr=slice_incr_amt
 #                                  )
 
-ffn = FFN(hidden_dim, batch_size, otu_handler, 20, use_gpu)
+ffn = FFN(hidden_dim, batch_size, otu_handler, 20, 32, use_gpu=use_gpu)
 train_loss, val_loss = ffn.train(batch_size, num_epochs, learning_rate,
                                  samples_per_epoch, save_params=save_params)

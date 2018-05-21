@@ -12,10 +12,13 @@ from helpers.model_helper import *
 import csv
 
 class FFN(nn.Module):
-    def __init__(self, hidden_dim, bs, otu_handler, slice_len,
+    def __init__(self, hidden_dim, bs, otu_handler, slice_len, conv_filters,
+                 kernel_size=3,
                  use_gpu=False):
         super(FFN, self).__init__()
         self.hidden_dim = hidden_dim
+        self.conv_filters = conv_filters
+        self.kernel_size = kernel_size
         self.otu_handler = otu_handler
         self.slice_len = slice_len
         self.batch_size = bs
@@ -30,7 +33,9 @@ class FFN(nn.Module):
 
     def __forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
-        return self.final_layer(self.layers(input_data).view(self.batch_size, -1))
+        after_conv = self.conv_layers(input_data.transpose(1, 2))
+        after_linear = self.linear_layers(after_conv.transpose(1, 2))
+        return self.final_layer(after_linear.view(self.batch_size, -1))
 
 
     '''
@@ -38,7 +43,21 @@ class FFN(nn.Module):
     daydreaming. so need to set it like this.
     '''
     def __set_layers(self):
-        self.layers = nn.Sequential(
+        self.conv_layers = nn.Sequential(
+            nn.Conv1d(self.otu_handler.num_strains,
+                      self.conv_filters,
+                      self.kernel_size, padding=1)
+            , nn.ReLU()
+            , nn.Conv1d(self.conv_filters,
+                      self.conv_filters,
+                      self.kernel_size, padding=1)
+            , nn.ReLU()
+            , nn.Conv1d(self.conv_filters,
+                      self.otu_handler.num_strains,
+                      1)
+            , nn.ReLU()
+        )
+        self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
