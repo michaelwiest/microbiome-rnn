@@ -42,6 +42,10 @@ class FFN(nn.Module):
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.BatchNorm1d(self.batch_size),
+            nn.ReLU(),
             nn.Dropout(0.5)
             )
 
@@ -106,7 +110,6 @@ class FFN(nn.Module):
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                     targets = add_cuda_to_variable(targets, self.use_gpu)
 
-                    self.__init_hidden()
                     outputs_val = self.__forward(data)
 
                     # Get the loss associated with this validation data.

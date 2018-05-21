@@ -16,11 +16,11 @@ samples_per_epoch = 500000
 num_epochs = 15
 learning_rate = 0.000005
 seq_len = 3
-reduced_num_strains=5
+reduced_num_strains = 5
 
 # If this value is below one then it increases by that percent
 # every epoch. If greater than one then it increases by that fixed
-# amount after every epoch.
+# amount after every epoch. Only used for RNN.
 slice_incr_amt = 1
 
 # Read in our data
@@ -41,15 +41,17 @@ otu_handler.normalize_data()
 
 use_gpu = torch.cuda.is_available()
 
-# rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
-#            LSTM_in_size=reduced_num_strains)
-
 
 model_name = 'model.pt'
 log_name = 'log.csv'
 save_params = (os.path.join(model_dir, model_name),
                os.path.join(log_dir, log_name))
 
+
+# rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
+#            LSTM_in_size=reduced_num_strains)
+#
+#
 # train_loss, val_loss = rnn.train(seq_len, batch_size,
 #                                  num_epochs,
 #                                  learning_rate,
