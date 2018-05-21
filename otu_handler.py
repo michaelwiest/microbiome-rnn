@@ -14,7 +14,7 @@ class OTUHandler(object):
         for f in files:
             self.samples.append(pd.read_csv(f, index_col=0))
         # Keep track of these for getting back and forth from normalized.
-        self.raw_samples = copy.deepcopy(samples)
+        self.raw_samples = copy.deepcopy(self.samples)
         self.strains = list(self.samples[0].index.values)
         self.num_strains = len(self.strains)
         self.train_data = None
@@ -95,22 +95,13 @@ class OTUHandler(object):
             start_index = np.random.randint(sample.shape[1] - slice_size)
             data = sample.iloc[:, start_index: start_index + slice_size].values
 
-            # Get the geometric mean of the data sampled. This is for
-            # a hacked CLR on the test examples.
-            # gm = gmean(data, axis=1)
-            # data = clr(data) # Perform CLR on the train data.
-            # Hacked CLR on the targets.
             target = sample.iloc[:, start_index + slice_size].values
             # Store all the values
             samples.append(data)
             targets.append(target)
-            # gmeans.append(gm)
 
         samples = np.array(samples)
         targets = np.array(targets)
-        # Expand the dimensions of the gmeans to match that of the samples.
-        # axis_to_add = len(samples.shape) - 1
-        # gmeans = np.expand_dims(gmeans, axis_to_add)
         return samples, targets
 
 
