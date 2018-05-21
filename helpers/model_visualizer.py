@@ -5,7 +5,7 @@ import sys
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 from otu_handler import OTUHandler
-from model import *
+from lstm import *
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')

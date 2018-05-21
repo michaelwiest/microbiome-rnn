@@ -1,7 +1,8 @@
+import copy
 import pandas as pd
 import numpy as np
 from skbio.stats.composition import clr, ilr
-from scipy.stats.mstats import gmean
+from scipy.stats.mstats import gmean, zscore
 
 '''
 Class for handling OTU data. It generates samples and keeps track of
@@ -12,11 +13,13 @@ class OTUHandler(object):
         self.samples = []
         for f in files:
             self.samples.append(pd.read_csv(f, index_col=0))
-
+        # Keep track of these for getting back and forth from normalized.
+        self.raw_samples = copy.deepcopy(samples)
         self.strains = list(self.samples[0].index.values)
         self.num_strains = len(self.strains)
         self.train_data = None
         self.val_data = None
+        self.normalization_method = None
 
     '''
     Set the training and validation data for each sample. Can include
@@ -40,6 +43,25 @@ class OTUHandler(object):
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)
 
+    def normalize_data(self, method='zscore'):
+        method = method.lower()
+        if method not in ['zscore', 'clr']:
+            raise AttributeError('Specify "zscore" or "clr" for method')
+        if method == 'zscore':
+            self.normalization_method = 'zscore'
+            m = zscore
+        else:
+            self.normalization_method = 'clr'
+            m = clr
+        new_vals = []
+        for s in self.samples:
+            new_vals.append(pd.DataFrame(m(s), index=s.index,
+                            columns=s.columns))
+
+        self.samples = new_vals
+        # Reassign the train and test values given the normalization.
+        self.set_train_val()
+
     '''
     Returns data of shape N x num_organisms x slice_size. Selects N random
     examples from all possible training samples. It selects from them evenly
@@ -49,7 +71,7 @@ class OTUHandler(object):
     def get_N_samples_and_targets(self, N, slice_size, train=True):
         samples = []  # Samples to feed to LSTM
         targets = []  # Single target to predict
-        gmeans = []  # Geometric means for weighting.
+        # gmeans = []  # Geometric means for weighting.
         if self.train_data is None:
             raise AttributeError('Please specify train and val data before '
                                  'calling this function.')
@@ -75,19 +97,22 @@ class OTUHandler(object):
 
             # Get the geometric mean of the data sampled. This is for
             # a hacked CLR on the test examples.
-            gm = gmean(data, axis=1)
-            data = clr(data) # Perform CLR on the train data.
+            # gm = gmean(data, axis=1)
+            # data = clr(data) # Perform CLR on the train data.
             # Hacked CLR on the targets.
-            target = np.log(sample.iloc[:, start_index + slice_size].values / gm)
+            target = sample.iloc[:, start_index + slice_size].values
             # Store all the values
             samples.append(data)
             targets.append(target)
-            gmeans.append(gm)
+            # gmeans.append(gm)
 
         samples = np.array(samples)
         targets = np.array(targets)
         # Expand the dimensions of the gmeans to match that of the samples.
-        axis_to_add = len(samples.shape) - 1
-        gmeans = np.expand_dims(gmeans, axis_to_add)#.repeat(slice_size,
-                                                    #        axis=axis_to_add)
-        return samples, targets, gmeans
+        # axis_to_add = len(samples.shape) - 1
+        # gmeans = np.expand_dims(gmeans, axis_to_add)
+        return samples, targets
+
+
+    def plot_values(self, sample_indices, num_strains):
+        pass

@@ -1,3 +1,4 @@
 import sys
 sys.path.append('..')
-from model.py import *
+from lstm import *
+from ffn import *
