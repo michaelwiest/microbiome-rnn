@@ -52,7 +52,7 @@ save_params = (os.path.join(model_dir, model_name),
 #            LSTM_in_size=reduced_num_strains)
 #
 #
-# train_loss, val_loss = rnn.train(seq_len, batch_size,
+# train_loss, val_loss = rnn.do_training(seq_len, batch_size,
 #                                  num_epochs,
 #                                  learning_rate,
 #                                  samples_per_epoch,
@@ -61,5 +61,5 @@ save_params = (os.path.join(model_dir, model_name),
 #                                  )
 
 ffn = FFN(hidden_dim, batch_size, otu_handler, 20, 32, use_gpu=use_gpu)
-train_loss, val_loss = ffn.train(batch_size, num_epochs, learning_rate,
+train_loss, val_loss = ffn.do_training(batch_size, num_epochs, learning_rate,
                                  samples_per_epoch, save_params=save_params)

@@ -90,9 +90,10 @@ def main():
 
     # rnn = get_model(model_file, input_dir)
     model = get_model(model_file, input_dir, ffn=True)
+    model.eval()
     primer = get_comparison_data(model, comparison_file_index, time_point_index,
                                  model.slice_len)
-    dream = model.daydream(primer)
+    dream = model.daydream(primer, plot_len)
     plot_comparison(model, comparison_file_index, time_point_index, time_window,
                     num_strains=num_strains_to_plot, plot_len=plot_len)
 

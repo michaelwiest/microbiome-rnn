@@ -89,7 +89,7 @@ class LSTM(nn.Module):
                                                 self.hidden_dim))
                            )
 
-    def train(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
+    def do_training(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
               slice_incr=None, save_params=None):
         np.random.seed(1)
 
@@ -156,7 +156,7 @@ class LSTM(nn.Module):
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           slice_len, train=False)
-                    
+
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                     targets = add_cuda_to_variable(targets, self.use_gpu)
 
