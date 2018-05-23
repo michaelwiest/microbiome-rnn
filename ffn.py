@@ -28,7 +28,7 @@ class FFN(nn.Module):
         # Compression layers from raw number of inputs to reduced number
         self.__set_layers()
         self.final_layer = nn.Linear(self.hidden_dim *
-                                     int(self.slice_len / 2),
+                                     int(self.slice_len),
                                      self.otu_handler.num_strains)
 
     def __forward(self, input_data):
@@ -60,7 +60,7 @@ class FFN(nn.Module):
                         self.otu_handler.num_strains,
                         1)
             , nn.ReLU()
-            , nn.MaxPool1d(2, 2)
+            # , nn.MaxPool1d(2, 2)
         )
         self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),

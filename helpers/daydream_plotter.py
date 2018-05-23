@@ -71,7 +71,8 @@ def plot_comparison(model, comparison_index,
     plt.figure(figsize=(18, 9))
     actual_vals = df.values[:, time_point_index - time_window:
                      time_point_index - time_window + plot_len]
-
+    if raw_plot:
+        actual_vals = model.otu_handler.un_normalize_data(actual_vals, comparison_index)
     for i in range(num_strains):
         # Plot the actual values
         plt.plot(actual_vals[i, :].T,
@@ -87,14 +88,19 @@ def main():
     num_strains_to_plot = int(sys.argv[5])
     comparison_file_index = int(sys.argv[6])
     plot_len = 100
+    raw_plot = True
 
     model = get_model(model_file, input_dir, ffn=True)
     # model.eval()
     primer = get_comparison_data(model, comparison_file_index, time_point_index,
                                  model.slice_len)
+
     dream = model.daydream(primer, plot_len)
+    if raw_plot:
+        dream = model.otu_handler.un_normalize_data(dream, comparison_file_index)
     plot_comparison(model, comparison_file_index, time_point_index, time_window,
-                    num_strains=num_strains_to_plot, plot_len=plot_len)
+                    num_strains=num_strains_to_plot, plot_len=plot_len,
+                    raw_plot=raw_plot)
 
     for i in range(num_strains_to_plot):
         # Plot the predicted values.
