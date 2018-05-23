@@ -85,8 +85,7 @@ class FFN(nn.Module):
         loss_function = nn.MSELoss()
         # TODO: Try Adagrad & RMSProp
         optimizer = optim.Adam(self.parameters(),
-                               lr=lr,
-                               weight_decay=0.00001)
+                               lr=lr)
 
         # For logging the data for plotting
         train_loss_vec = []
