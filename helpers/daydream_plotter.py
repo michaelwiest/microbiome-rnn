@@ -88,9 +88,8 @@ def main():
     comparison_file_index = int(sys.argv[6])
     plot_len = 100
 
-    # rnn = get_model(model_file, input_dir)
     model = get_model(model_file, input_dir, ffn=True)
-    model.eval()
+    # model.eval()
     primer = get_comparison_data(model, comparison_file_index, time_point_index,
                                  model.slice_len)
     dream = model.daydream(primer, plot_len)

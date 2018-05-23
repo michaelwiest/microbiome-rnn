@@ -71,16 +71,28 @@ class OTUHandler(object):
                                                                     axis=1))
             if std is not None:
                 self.normalization_factors[method]['std'].append(std(s.values, axis=1))
-            new_vals.append(pd.DataFrame(m(s), index=s.index,
+            new_vals.append(pd.DataFrame(m(s, axis=1), index=s.index,
                             columns=s.columns))
 
         self.samples = new_vals
         # Reassign the train and test values given the normalization.
-        print(self.normalization_factors)
         self.set_train_val()
 
+    '''
+    Function for returning the normalized values to the raw values.
+    This is good for plotting the predicted values versus actual values.
+    '''
     def un_normalize_data(self, new_data, parameter_index):
-        pass
+        means = np.array(self.normalization_factors[self.normalization_method]['mean'][parameter_index])
+        std = np.array(self.normalization_factors[self.normalization_method]['std'][parameter_index])
+        means = np.expand_dims(means, axis=1).repeat(new_data.shape[1], axis=1)
+        std = np.expand_dims(std, axis=1).repeat(new_data.shape[1], axis=1)
+        if self.normalization_method == 'zscore':
+            return new_data * std + means
+        else:
+            return np.exp(new_data) * means
+
+
 
 
 

@@ -84,8 +84,7 @@ class FFN(nn.Module):
 
         loss_function = nn.MSELoss()
         # TODO: Try Adagrad & RMSProp
-        optimizer = optim.Adam(self.parameters(),
-                               lr=lr)
+        optimizer = optim.Adam(self.parameters(), lr=lr)
 
         # For logging the data for plotting
         train_loss_vec = []
@@ -128,7 +127,7 @@ class FFN(nn.Module):
                 # Basiaclly do the same as above, but with validation data.
                 # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
-                    self.eval()
+                    # self.eval()
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           self.slice_len, train=False)
