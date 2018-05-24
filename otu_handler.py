@@ -70,9 +70,11 @@ class OTUHandler(object):
             self.normalization_factors[method]['mean'].append(means(s.values,
                                                                     axis=1))
             if std is not None:
-                self.normalization_factors[method]['std'].append(std(s.values, axis=1))
-            new_vals.append(pd.DataFrame(m(s, axis=1), index=s.index,
-                            columns=s.columns))
+                self.normalization_factors[method]['std'].append(std(s.values,
+                                                                     axis=1))
+            new_vals.append(pd.DataFrame(m(s.values),
+                                         index=s.index,
+                                         columns=s.columns))
 
         self.samples = new_vals
         # Reassign the train and test values given the normalization.

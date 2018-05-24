@@ -28,15 +28,15 @@ class FFN(nn.Module):
         # Compression layers from raw number of inputs to reduced number
         self.__set_layers()
         self.final_layer = nn.Linear(self.hidden_dim *
-                                     int(self.slice_len),
+                                     int(self.slice_len / 2),
                                      self.otu_handler.num_strains)
 
     def __forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
-        # after_conv = self.conv_layers(input_data.transpose(0, 1).transpose(1, 2))
-        # after_linear = self.linear_layers(after_conv.transpose(1, 2).transpose(1, 0))
-        after_linear = self.linear_layers(input_data)
+        after_conv = self.conv_layers(input_data.transpose(0, 1).transpose(1, 2))
+        after_linear = self.linear_layers(after_conv.transpose(1, 2).transpose(1, 0))
         return self.final_layer(after_linear.view(self.batch_size, -1))
+
 
 
     '''
@@ -61,22 +61,24 @@ class FFN(nn.Module):
                         self.otu_handler.num_strains,
                         1)
             , nn.ReLU()
-            # , nn.MaxPool1d(2, 2)
+            , nn.MaxPool1d(2, 2)
         )
         self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
+            # nn.Dropout(0.5),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
-            nn.ReLU()
+            nn.ReLU(),
+            # nn.Dropout(0.5)
             )
 
     def do_training(self, batch_size, epochs, lr, samples_per_epoch,
-              slice_incr=None, save_params=None):
+                    save_params=None):
 
         np.random.seed(1)
-        self.train()
+        # self.train()
 
         self.batch_size = batch_size
 
@@ -98,7 +100,7 @@ class FFN(nn.Module):
             # decides how many examples to do before increasing the length
             # of the slice of data fed to the LSTM.
             for iterate in range(int(samples_per_epoch / self.batch_size)):
-
+                self.train()
                 # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                                    self.slice_len)
@@ -128,7 +130,7 @@ class FFN(nn.Module):
                 # Basiaclly do the same as above, but with validation data.
                 # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
-                    # self.eval()
+                    self.eval()
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           self.slice_len, train=False)
