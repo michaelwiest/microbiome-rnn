@@ -88,7 +88,7 @@ def main():
     num_strains_to_plot = int(sys.argv[5])
     comparison_file_index = int(sys.argv[6])
     plot_len = 100
-    raw_plot = True
+    raw_plot = False
 
     model = get_model(model_file, input_dir, ffn=True)
     # model.eval()

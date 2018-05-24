@@ -33,8 +33,9 @@ class FFN(nn.Module):
 
     def __forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
-        after_conv = self.conv_layers(input_data.transpose(0, 1).transpose(1, 2))
-        after_linear = self.linear_layers(after_conv.transpose(1, 2).transpose(1, 0))
+        # after_conv = self.conv_layers(input_data.transpose(0, 1).transpose(1, 2))
+        # after_linear = self.linear_layers(after_conv.transpose(1, 2).transpose(1, 0))
+        after_linear = self.linear_layers(input_data)
         return self.final_layer(after_linear.view(self.batch_size, -1))
 
 
