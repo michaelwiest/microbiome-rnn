@@ -70,9 +70,9 @@ class FFN(nn.Module):
         for epoch in range(epochs):
             iterate = 0
 
-            # For a specified number of examples per epoch. This basically
-            # decides how many examples to do before increasing the length
-            # of the slice of data fed to the LSTM.
+            # For a specified number of examples per epoch. Ideally this
+            # would be a function of how much data there is. Ie, go through
+            # all the data once.
             for iterate in range(int(samples_per_epoch / self.batch_size)):
 
                 # Select a random sample from the data handler.
@@ -87,9 +87,6 @@ class FFN(nn.Module):
                 self.zero_grad()
 
                 # Do a forward pass of the model.
-                # Only keep the last prediction as that is what we are
-                # comparing against. Essentially treating everything up to
-                # that as a primer.
                 outputs = self.__forward(data)
 
                 # For this round set our loss to zero and then compare
