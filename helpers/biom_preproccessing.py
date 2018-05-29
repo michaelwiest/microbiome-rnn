@@ -62,7 +62,9 @@ for i, table in enumerate(output_tables):
     if sort_dates:
         dates = [m['collection_timestamp'] for m in table.metadata()]
         to_save = to_save.T
-        to_save['date'] = dates
+        to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
+                                         errors='coerce')
+        to_save.dropna(subset=['date'], inplace=True)
         to_save.sort_values(by=['date'], inplace=True)
         to_save.drop(['date'], axis=1, inplace=True)
         to_save = to_save.T
