@@ -104,10 +104,10 @@ class OTUHandler(object):
     at the moment, but this can be tweaked to select more often from larger
     samples.
     '''
-    def get_N_samples_and_targets(self, N, slice_size, train=True):
+    def get_N_samples_and_targets(self, N, slice_size,
+                                  train=True, target_slice=True):
         samples = []  # Samples to feed to LSTM
         targets = []  # Single target to predict
-        # gmeans = []  # Geometric means for weighting.
         if self.train_data is None:
             raise AttributeError('Please specify train and val data before '
                                  'calling this function.')
@@ -131,7 +131,12 @@ class OTUHandler(object):
             start_index = np.random.randint(sample.shape[1] - slice_size)
             data = sample.iloc[:, start_index: start_index + slice_size].values
 
-            target = sample.iloc[:, start_index + slice_size].values
+            # For the LSTM we want a whole slice of values to compare against.
+            # Not just a single target like in the FFN.
+            if not target_slice:
+                target = sample.iloc[:, start_index + slice_size].values
+            else:
+                target = sample.iloc[:, start_index + 1: start_index + slice_size + 1].values
             # Store all the values
             samples.append(data)
             targets.append(target)
