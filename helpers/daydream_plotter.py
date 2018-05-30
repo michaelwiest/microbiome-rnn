@@ -1,6 +1,10 @@
+'''
+This file is for plotting the predictions of the model given a Priming
+sequence. This file is pretty crude and could definitely be abstracted
+where all of this is in each of the model objects.
+'''
 import sys
 import os.path
-
 import pandas as pd
 from scipy.stats.mstats import gmean
 import matplotlib.pyplot as plt
@@ -21,7 +25,8 @@ def get_model(model_file, input_dir,
               hidden_dim=64,
               slice_len=20,
               conv_filters=32,
-              ffn=True):
+              ffn=True,
+              lstm_in_size=30):
     # Read in our data
     files = []
     for (dirpath, dirnames, filenames) in os.walk(input_dir):
@@ -43,7 +48,7 @@ def get_model(model_file, input_dir,
         m = FFN(hidden_dim, batch_size, otu_handler, slice_len, conv_filters)
     else:
         m = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
-                   LSTM_in_size=5)
+                   LSTM_in_size=lstm_in_size)
     m.load_state_dict(torch.load(model_file))
     return m
 
@@ -84,11 +89,17 @@ def main():
     comparison_file_index = int(sys.argv[6])
     plot_len = 100
     raw_plot = False
+    lstm_slice_len = 15
+    is_ffn = True
 
-    model = get_model(model_file, input_dir, ffn=True)
-    # model.eval()
-    primer = get_comparison_data(model, comparison_file_index, time_point_index,
-                                 model.slice_len)
+    model = get_model(model_file, input_dir, ffn=is_ffn)
+    model.eval()
+    if is_ffn:
+        primer = get_comparison_data(model, comparison_file_index, time_point_index,
+                                     model.slice_len)
+    else:
+        primer = get_comparison_data(model, comparison_file_index, time_point_index,
+                                      lstm_slice_len)
 
     dream = model.daydream(primer, plot_len)
     if raw_plot:

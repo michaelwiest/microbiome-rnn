@@ -206,7 +206,6 @@ class LSTM(nn.Module):
         self.__init_hidden()
 
         predicted = primer
-
         # If we do it the serial way, then primer the model with all examples
         # up to the most recent one.
         if serial:
@@ -220,7 +219,7 @@ class LSTM(nn.Module):
                 inp = add_cuda_to_variable(predicted[:, -1], self.use_gpu)
             else:
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
-            inp = inp.unsqueeze(-1).transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
+            inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
             output = self.__forward(inp)[-1].transpose(0, 1).data.numpy()
             # Add the new value to the values to be passed to the LSTM.
