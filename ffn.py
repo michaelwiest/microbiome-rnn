@@ -23,9 +23,6 @@ class FFN(nn.Module):
         self.slice_len = slice_len
         self.batch_size = bs
         self.use_gpu = use_gpu
-        # self.hidden = self.__init_hidden()
-
-        # Compression layers from raw number of inputs to reduced number
         self.__set_layers()
         self.final_layer = nn.Linear(self.hidden_dim *
                                      int(self.slice_len),
