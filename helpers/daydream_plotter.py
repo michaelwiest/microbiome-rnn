@@ -51,11 +51,6 @@ def get_model(model_file, input_dir,
 def get_comparison_data(model, comparison_index, time_point_index, time_window):
     d = model.otu_handler.val_data[comparison_index]
     primer = d.values[:, time_point_index - time_window: time_point_index]
-    # gm = gmean(primer.T)
-    # primer = zscore(primer)
-    # gm = np.expand_dims(gm, 1)
-
-    # primer = np.concatenate((gm, primer), axis=1)
     return primer
 
 

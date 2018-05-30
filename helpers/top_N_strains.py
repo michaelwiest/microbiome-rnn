@@ -101,17 +101,8 @@ def main():
         clr_fname = ''.join(files[i].split('.')[:-1]) + '_sub_{}_clr.csv'.format(N_strains)
 
         raws[i].to_csv(os.path.join(output_dir, raw_fname))
-        clrs[i].to_csv(os.path.join(output_dir, clr_fname))
+        # clrs[i].to_csv(os.path.join(output_dir, clr_fname))
 
-        # gm = np.array(gmean(raws[i], axis=1))
-        # gm = pd.DataFrame(np.expand_dims(gm, axis=0),
-        #                   index=[raw_fname[:-4]],
-        #                   columns=list(raws[i].index.values)
-        #                   )
-        # gmeans.append(gm)
-
-    # pd.concat(gmeans).to_csv(os.path.join(gmeans_dir,
-    #                                       '{}_gmeams.csv'.format(N_strains)
-    #                                       ))
+        
 if __name__ == '__main__':
     main()
