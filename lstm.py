@@ -113,20 +113,15 @@ class LSTM(nn.Module):
             # decides how many examples to do before increasing the length
             # of the slice of data fed to the LSTM.
             for iterate in range(int(samples_per_epoch / self.batch_size)):
+                self.train() # Put the network in training mode.
 
                 # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                                    slice_len)
-                # Prefix the data with the geometric means. This may not work
-                # for predicting very long sequences because the model may
-                # forget.
-
-                # data = np.dstack((gmeans, data))
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size
                 #   to: sequence_size x batch x num_strains
-
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                 targets = add_cuda_to_variable(targets, self.use_gpu)
                 self.zero_grad()
@@ -136,13 +131,10 @@ class LSTM(nn.Module):
                 self.__init_hidden()
 
                 # Do a forward pass of the model.
-                # Only keep the last prediction as that is what we are
-                # comparing against. Essentially treating everything up to
-                # that as a primer.
-                outputs = self.__forward(data)[-1, :, :]
+                outputs = self.__forward(data).transpose(0, 1).transpose(1, 2)
 
                 # For this round set our loss to zero and then compare
-                # accumulate losses for all of the batch examples.
+                # accumulated losses for all of the batch examples.
                 # Finally step with the optimizer.
                 loss = 0
                 for bat in range(batch_size):
@@ -153,6 +145,7 @@ class LSTM(nn.Module):
                 # Basiaclly do the same as above, but with validation data.
                 # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
+                    self.eval()
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           slice_len, train=False)
@@ -162,7 +155,7 @@ class LSTM(nn.Module):
 
                     self.__init_hidden()
                     outputs_val = self.__forward(data)
-                    outputs_val = outputs_val[-1, :, :]
+                    outputs_val = outputs_val.transpose(0, 1).transpose(1, 2)
 
                     # Get the loss associated with this validation data.
                     val_loss = 0
@@ -213,7 +206,6 @@ class LSTM(nn.Module):
         self.__init_hidden()
 
         predicted = primer
-
         # If we do it the serial way, then primer the model with all examples
         # up to the most recent one.
         if serial:
@@ -227,9 +219,9 @@ class LSTM(nn.Module):
                 inp = add_cuda_to_variable(predicted[:, -1], self.use_gpu)
             else:
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
-            inp = inp.unsqueeze(-1).transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
+            inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
-            output = self.__forward(inp)[-1].transpose(0,1).data.numpy()
+            output = self.__forward(inp)[-1].transpose(0, 1).data.numpy()
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
