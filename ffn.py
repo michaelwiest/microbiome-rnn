@@ -12,10 +12,13 @@ from helpers.model_helper import *
 import csv
 
 class FFN(nn.Module):
-    def __init__(self, hidden_dim, bs, otu_handler, slice_len,
+    def __init__(self, hidden_dim, bs, otu_handler, slice_len, conv_filters,
+                 kernel_size=3,
                  use_gpu=False):
         super(FFN, self).__init__()
         self.hidden_dim = hidden_dim
+        self.conv_filters = conv_filters
+        self.kernel_size = kernel_size
         self.otu_handler = otu_handler
         self.slice_len = slice_len
         self.batch_size = bs
@@ -25,12 +28,15 @@ class FFN(nn.Module):
         # Compression layers from raw number of inputs to reduced number
         self.__set_layers()
         self.final_layer = nn.Linear(self.hidden_dim *
-                                     self.slice_len,
+                                     int(self.slice_len),
                                      self.otu_handler.num_strains)
 
     def __forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
-        return self.final_layer(self.layers(input_data).view(self.batch_size, -1))
+        after_conv = self.conv_layers(input_data.transpose(0, 1).transpose(1, 2))
+        after_linear = self.linear_layers(after_conv.transpose(1, 2).transpose(1, 0))
+        return self.final_layer(after_linear.view(self.batch_size, -1))
+
 
 
     '''
@@ -38,21 +44,41 @@ class FFN(nn.Module):
     daydreaming. so need to set it like this.
     '''
     def __set_layers(self):
-        self.layers = nn.Sequential(
+        self.conv_layers = nn.Sequential(
+            nn.Conv1d(self.otu_handler.num_strains,
+                      self.conv_filters,
+                      self.kernel_size, padding=1)
+            , nn.ReLU()
+            , nn.Conv1d(self.conv_filters,
+                        self.conv_filters * 2,
+                        self.kernel_size, padding=1)
+            , nn.ReLU()
+            , nn.Conv1d(self.conv_filters * 2,
+                        self.conv_filters * 4,
+                        self.kernel_size, padding=1)
+            , nn.ReLU()
+            , nn.Conv1d(self.conv_filters * 4,
+                        self.otu_handler.num_strains,
+                        1)
+            , nn.ReLU()
+            # , nn.MaxPool1d(2, 2)
+        )
+        self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            # nn.Dropout(0.5),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
-            nn.Dropout(0.5)
+            # nn.Dropout(0.5)
             )
 
-    def train(self, batch_size, epochs, lr, samples_per_epoch,
-              slice_incr=None, save_params=None):
+    def do_training(self, batch_size, epochs, lr, samples_per_epoch,
+                    save_params=None):
 
         np.random.seed(1)
+        # self.train()
 
         self.batch_size = batch_size
 
@@ -74,7 +100,7 @@ class FFN(nn.Module):
             # would be a function of how much data there is. Ie, go through
             # all the data once.
             for iterate in range(int(samples_per_epoch / self.batch_size)):
-
+                self.train()
                 # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                                    self.slice_len)
@@ -101,6 +127,7 @@ class FFN(nn.Module):
                 # Basiaclly do the same as above, but with validation data.
                 # Also don't have the optimizer step at all.
                 if iterate % 1000 == 0:
+                    self.eval()
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                           self.slice_len, train=False)
@@ -138,6 +165,7 @@ class FFN(nn.Module):
     def daydream(self, primer, predict_len=100):
         self.batch_size = 1
         self.__set_layers()
+        # self.eval()
 
         predicted = primer
         for p in range(predict_len):

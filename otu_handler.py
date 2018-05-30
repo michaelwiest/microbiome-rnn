@@ -20,6 +20,7 @@ class OTUHandler(object):
         self.train_data = None
         self.val_data = None
         self.normalization_method = None
+        self.normalization_factors = {}
 
     '''
     Set the training and validation data for each sample. Can include
@@ -43,24 +44,59 @@ class OTUHandler(object):
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)
 
+    '''
+    Method for normalizing the input data. it also keeps track of the
+    relevant parameters used for normalization so that they can be
+    returned to their raw values for transformation of the predicted data.
+    '''
     def normalize_data(self, method='zscore'):
         method = method.lower()
         if method not in ['zscore', 'clr']:
-            raise AttributeError('Specify "zscore" or "clr" for method')
+            raise ValueError('Specify "zscore" or "clr" for method')
         if method == 'zscore':
             self.normalization_method = 'zscore'
             m = zscore
+            means = np.mean
+            std = np.std
         else:
             self.normalization_method = 'clr'
             m = clr
+            means = gmean
+            std = None
         new_vals = []
+        self.normalization_factors[method] = {'mean': [],
+                                              'std': []}
         for s in self.samples:
-            new_vals.append(pd.DataFrame(m(s), index=s.index,
-                            columns=s.columns))
+            self.normalization_factors[method]['mean'].append(means(s.values,
+                                                                    axis=1))
+            if std is not None:
+                self.normalization_factors[method]['std'].append(std(s.values,
+                                                                     axis=1))
+            new_vals.append(pd.DataFrame(m(s.values),
+                                         index=s.index,
+                                         columns=s.columns))
 
         self.samples = new_vals
         # Reassign the train and test values given the normalization.
         self.set_train_val()
+
+    '''
+    Function for returning the normalized values to the raw values.
+    This is good for plotting the predicted values versus actual values.
+    '''
+    def un_normalize_data(self, new_data, parameter_index):
+        means = np.array(self.normalization_factors[self.normalization_method]['mean'][parameter_index])
+        std = np.array(self.normalization_factors[self.normalization_method]['std'][parameter_index])
+        means = np.expand_dims(means, axis=1).repeat(new_data.shape[1], axis=1)
+        std = np.expand_dims(std, axis=1).repeat(new_data.shape[1], axis=1)
+        if self.normalization_method == 'zscore':
+            return new_data * std + means
+        else:
+            return np.exp(new_data) * means
+
+
+
+
 
     '''
     Returns data of shape N x num_organisms x slice_size. Selects N random

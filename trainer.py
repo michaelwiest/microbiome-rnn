@@ -13,8 +13,8 @@ log_dir = 'logs'
 batch_size = 30
 hidden_dim = 64
 samples_per_epoch = 500000
-num_epochs = 15
-learning_rate = 0.000005
+num_epochs = 8
+learning_rate = 0.0000005
 seq_len = 3
 reduced_num_strains = 5
 
@@ -52,7 +52,7 @@ save_params = (os.path.join(model_dir, model_name),
 #            LSTM_in_size=reduced_num_strains)
 #
 #
-# train_loss, val_loss = rnn.train(seq_len, batch_size,
+# train_loss, val_loss = rnn.do_training(seq_len, batch_size,
 #                                  num_epochs,
 #                                  learning_rate,
 #                                  samples_per_epoch,
@@ -60,6 +60,6 @@ save_params = (os.path.join(model_dir, model_name),
 #                                  slice_incr=slice_incr_amt
 #                                  )
 
-ffn = FFN(hidden_dim, batch_size, otu_handler, 20, use_gpu)
-train_loss, val_loss = ffn.train(batch_size, num_epochs, learning_rate,
+ffn = FFN(hidden_dim, batch_size, otu_handler, 20, 32, use_gpu=use_gpu)
+train_loss, val_loss = ffn.do_training(batch_size, num_epochs, learning_rate,
                                  samples_per_epoch, save_params=save_params)
