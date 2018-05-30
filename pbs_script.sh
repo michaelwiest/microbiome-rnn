@@ -99,4 +99,4 @@ echo Using ${NPROCS} processors across ${NNODES} nodes
 #
 
 # Actually call the trainer.
-python trainer.py just_rob_knight # Put the directory here
+python trainer.py just_rob_knight2 # Put the directory here
