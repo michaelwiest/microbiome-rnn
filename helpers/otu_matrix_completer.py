@@ -10,8 +10,10 @@ def main(fname):
     good_indices = df.astype(bool).sum(axis=1).values > num_nonzero
     df = df.iloc[good_indices]
     # Normalize the counts
-    meds = np.repeat(np.expand_dims(df.median(axis=1), 1), df.shape[1], axis=1)
-    sums = np.repeat(np.expand_dims(df.sum(axis=1), 1), df.shape[1], axis=1)
+    # meds = np.repeat(np.expand_dims(df.median(axis=0), 0), df.shape[0], axis=0)
+    sums = np.repeat(np.expand_dims(df.sum(axis=0), 0),
+                     df.shape[0], axis=0)
+    meds = np.median(sums)
     df = df * meds / sums
     completed = pd.DataFrame(untangle.complete_matrix(df.as_matrix().copy(),
                                                       iteration=100, minval=0.1),
