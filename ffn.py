@@ -100,7 +100,8 @@ class FFN(nn.Module):
                 self.train()
                 # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                                   self.slice_len)
+                                                                           self.slice_len,
+                                                                           target_slice=False)
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size
@@ -127,7 +128,9 @@ class FFN(nn.Module):
                     self.eval()
                     print('Loss ' + str(loss.data[0] / self.batch_size))
                     data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                          self.slice_len, train=False)
+                                                                               self.slice_len,
+                                                                               train=False,
+                                                                               target_slice=False)
                     data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
                     targets = add_cuda_to_variable(targets, self.use_gpu)
 

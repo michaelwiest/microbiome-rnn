@@ -90,7 +90,7 @@ def main():
     plot_len = 100
     raw_plot = False
     lstm_slice_len = 15
-    is_ffn = True
+    is_ffn = False
 
     model = get_model(model_file, input_dir, ffn=is_ffn)
     model.eval()
