@@ -46,7 +46,7 @@ def main():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     N_strains = int(sys.argv[3])
-    rolling_window = 25  # Configurable for smoothing
+    rolling_window = None  # Configurable for smoothing
 
     # Get each file
     raws = []
@@ -103,6 +103,6 @@ def main():
         raws[i].to_csv(os.path.join(output_dir, raw_fname))
         # clrs[i].to_csv(os.path.join(output_dir, clr_fname))
 
-        
+
 if __name__ == '__main__':
     main()
