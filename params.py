@@ -3,7 +3,7 @@ batch_size = 30
 hidden_dim = 64
 # How many samples to check before one epoch. Kind of arbitrary.
 samples_per_epoch = 500000
-num_epochs = 15
+num_epochs = 20
 learning_rate = 0.0000005
 # Length of the sequence being passed to the LSTM or FFN.
 seq_len = 15
