@@ -52,6 +52,14 @@ class LSTM(nn.Module):
             # nn.BatchNorm1d(hidden_dim),
             nn.Tanh(),
             nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.5),
             nn.Linear(hidden_dim, self.otu_handler.num_strains),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.Tanh()
@@ -200,7 +208,7 @@ class LSTM(nn.Module):
     at a time to the LSTM with no gradient zeroing, or fed as a batch
     and then zeroed everytime. serial=True has been giving better results.
     '''
-    def daydream(self, primer, predict_len=100, window_size=10,
+    def daydream(self, primer, predict_len=100, window_size=20,
                  serial=True):
         self.batch_size = 1
         self.__init_hidden()

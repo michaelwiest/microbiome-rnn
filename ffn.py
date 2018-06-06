@@ -68,6 +68,12 @@ class FFN(nn.Module):
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.BatchNorm1d(self.batch_size),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.BatchNorm1d(self.batch_size),
+            nn.ReLU(),
             # nn.Dropout(0.5)
             )
 

@@ -22,11 +22,11 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 def get_model(model_file, input_dir,
               batch_size=30,
-              hidden_dim=64,
+              hidden_dim=128,
               slice_len=20,
               conv_filters=32,
               ffn=True,
-              lstm_in_size=30):
+              lstm_in_size=80):
     # Read in our data
     files = []
     for (dirpath, dirnames, filenames) in os.walk(input_dir):
@@ -88,11 +88,14 @@ def main():
     num_strains_to_plot = int(sys.argv[5])
     comparison_file_index = int(sys.argv[6])
     plot_len = 100
-    raw_plot = False
-    lstm_slice_len = 15
-    is_ffn = False
-
-    model = get_model(model_file, input_dir, ffn=is_ffn)
+    raw_plot = True
+    lstm_slice_len = 20
+    try:
+        model = get_model(model_file, input_dir, ffn=True)
+        is_ffn = True
+    except KeyError:
+        model = get_model(model_file, input_dir, ffn=False)
+        is_ffn = False
     model.eval()
     if is_ffn:
         primer = get_comparison_data(model, comparison_file_index, time_point_index,
@@ -102,6 +105,7 @@ def main():
                                       lstm_slice_len)
 
     dream = model.daydream(primer, plot_len)
+
     if raw_plot:
         dream = model.otu_handler.un_normalize_data(dream, comparison_file_index)
     plot_comparison(model, comparison_file_index, time_point_index, time_window,
