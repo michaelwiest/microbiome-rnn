@@ -149,29 +149,29 @@ class LSTM(nn.Module):
                     loss += loss_function(outputs[bat, :], targets[bat, :])
                 loss.backward()
                 optimizer.step()
-
-                # Basiaclly do the same as above, but with validation data.
-                # Also don't have the optimizer step at all.
-                if iterate % 1000 == 0:
-                    self.eval()
-                    print('Loss ' + str(loss.data[0] / self.batch_size))
-                    data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                          slice_len, train=False)
-
-                    data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                    targets = add_cuda_to_variable(targets, self.use_gpu)
-
-                    self.__init_hidden()
-                    outputs_val = self.__forward(data)
-                    outputs_val = outputs_val.transpose(0, 1).transpose(1, 2)
-
-                    # Get the loss associated with this validation data.
-                    val_loss = 0
-                    for bat in range(self.batch_size):
-                        val_loss += loss_function(outputs_val[bat, :], targets[bat, :])
-                    val_loss_vec.append(val_loss.data[0] / self.batch_size)
-                    train_loss_vec.append(loss.data[0] / self.batch_size)
                 iterate += 1
+
+            # Basically do the same as above, but with validation data.
+            # Also don't have the optimizer step at all.
+            self.eval()
+            print('Loss ' + str(loss.data[0] / self.batch_size))
+            data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                                                                  slice_len, train=False)
+
+            data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
+            targets = add_cuda_to_variable(targets, self.use_gpu)
+
+            self.__init_hidden()
+            outputs_val = self.__forward(data)
+            outputs_val = outputs_val.transpose(0, 1).transpose(1, 2)
+
+            # Get the loss associated with this validation data.
+            val_loss = 0
+            for bat in range(self.batch_size):
+                val_loss += loss_function(outputs_val[bat, :], targets[bat, :])
+            val_loss_vec.append(val_loss.data[0] / self.batch_size)
+            train_loss_vec.append(loss.data[0] / self.batch_size)
+
 
             print('Completed Epoch ' + str(epoch))
 
