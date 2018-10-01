@@ -13,3 +13,8 @@ reduced_num_strains = 80
 # every epoch. If greater than one then it increases by that fixed
 # amount after every epoch. Only used for RNN.
 slice_incr_amt = 1
+
+
+run_suffix = ''
+model_name = 'model{}.pt'
+log_name = 'log{}.pt'

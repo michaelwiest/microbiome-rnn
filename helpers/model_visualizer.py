@@ -39,7 +39,7 @@ def plot_scatter_from_weights(weights, otu_handler, pca, taxonomy_depth=4):
 def main():
     # Not really used. Just for instantiating the model.
     batch_size = 30
-    hidden_dim = 64
+    hidden_dim = 128
 
     input_dir = sys.argv[1]
     model_name = sys.argv[2]
@@ -50,7 +50,7 @@ def main():
     for (dirpath, dirnames, filenames) in os.walk(input_dir):
         files.extend(filenames)
         break
-    files = [os.path.join(input_dir, f) for f in files if f.endswith('_clr.csv')]
+    files = [os.path.join(input_dir, f) for f in files]
 
     # Generate the data handler object
     otu_handler = OTUHandler(files)
@@ -61,7 +61,7 @@ def main():
 
     # Get the model
     rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
-               LSTM_in_size=5)
+               LSTM_in_size=80)
 
     # Load in the trained model data.
     rnn.load_state_dict(torch.load(model_name))

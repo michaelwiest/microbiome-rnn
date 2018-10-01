@@ -21,7 +21,7 @@ def complete_and_multiindex_df(df):
     return combined
 
 def main():
-    levels = 5
+    levels = 3
     df = pd.read_csv(sys.argv[1], index_col=0)
     combined = complete_and_multiindex_df(df)
     counts = combined.groupby(level=list(range(levels))).mean()
@@ -34,7 +34,7 @@ def main():
     ax.set_xticks(np.arange(len(cv)) + bar_width / 2)
     ax.set_xticklabels(labels,
                        ha='right',
-                       fontsize=8)
+                       fontsize=6)
     plt.ylabel('Strain Count')
     plt.title('Average Count of Strain Taxonomies')
     plt.tight_layout()
