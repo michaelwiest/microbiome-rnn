@@ -1,11 +1,12 @@
-from otu_handler import OTUHandler
 from lstm import LSTM
-from ffn import FFN
 import torch
 import os
 import sys
 import pandas as pd
 from params import *
+# add the root directory of the project to the path..
+sys.path.insert(1, os.path.join(sys.path[0], '../..'))
+from otu_handler import OTUHandler
 
 # Read in our data
 input_dir = sys.argv[1]
