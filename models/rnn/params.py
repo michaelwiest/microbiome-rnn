@@ -18,3 +18,4 @@ slice_incr_amt = 1
 run_suffix = ''
 model_name = 'model{}.pt'
 log_name = 'log{}.pt'
+output_dir = 'rnn_output'
