@@ -99,6 +99,45 @@ class LSTM(nn.Module):
                                                 self.hidden_dim))
                            )
 
+    def get_intermediate_losses(self, loss_function, num_batches=10):
+        '''
+        This generates some scores
+        '''
+        self.eval()
+
+        scores_to_return = []
+
+        # First get some training loss and then a validation loss.
+        for is_train in [True, False]:
+            loss = 0
+            for b in num_batches:
+                data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                                                                           slice_len,
+                                                                           train=is_train)
+                data = add_cuda_to_variable(data, self.use_gpu,
+                                            requires_grad=False).transpose(1, 2).transpose(0, 1)
+                targets = add_cuda_to_variable(targets, self.use_gpu,
+                                               requires_grad=False)
+
+                self.__init_hidden()
+                outputs = self.__forward(data)
+                outputs = outputs.transpose(0, 1).transpose(1, 2)
+
+                # Get the loss associated with this validation data.
+                for bat in range(self.batch_size):
+                    loss += loss_function(outputs[bat, :], targets[bat, :])
+
+            # Store a normalized loss.
+            if self.use_gpu:
+                scores_to_return.append(loss.data.cpu().numpy().item()
+                                        / (self.batch_size * num_batches))
+            else:
+                scores_to_return.append(loss.data.numpy().item() / self.batch_size
+                                        / (self.batch_size * num_batches))
+
+            return scores_to_return
+
+
     def do_training(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
               slice_incr=None, save_params=None):
         np.random.seed(1)
@@ -154,33 +193,20 @@ class LSTM(nn.Module):
                 optimizer.step()
                 iterate += 1
 
-            # Basically do the same as above, but with validation data.
-            # Also don't have the optimizer step at all.
-            self.eval()
-            print('Loss ' + str(loss.data[0] / self.batch_size))
-            data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                  slice_len, train=False)
-
-            data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-            targets = add_cuda_to_variable(targets, self.use_gpu)
-
-            self.__init_hidden()
-            outputs_val = self.__forward(data)
-            outputs_val = outputs_val.transpose(0, 1).transpose(1, 2)
-
-            # Get the loss associated with this validation data.
-            val_loss = 0
-            for bat in range(self.batch_size):
-                val_loss += loss_function(outputs_val[bat, :], targets[bat, :])
-            val_loss_vec.append(val_loss.data[0] / self.batch_size)
-            train_loss_vec.append(loss.data[0] / self.batch_size)
-
-
             print('Completed Epoch ' + str(epoch))
+
+            # Get some train and val losses. These can be used for early
+            # stopping later on.
+            losses = self.get_intermediate_losses(loss_function)
+
+            train_loss_vec.append(losses[0])
+            val_loss_vec.append(losses[1])
+            print('Train loss: {}'.format(losses[0]))
+            print('  Val loss: {}'.format(losses[1]))
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr is not None:
+            if slice_incr is not None or slice_incr != 0:
                 # Handle percentage increase or integer increase.
                 if slice_incr >= 1.0:
                     slice_len += slice_incr
