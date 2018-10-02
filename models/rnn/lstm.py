@@ -99,7 +99,8 @@ class LSTM(nn.Module):
                                                 self.hidden_dim))
                            )
 
-    def get_intermediate_losses(self, loss_function, num_batches=10):
+    def get_intermediate_losses(self, loss_function, slice_len,
+                                num_batches=10):
         '''
         This generates some scores
         '''
@@ -197,7 +198,7 @@ class LSTM(nn.Module):
 
             # Get some train and val losses. These can be used for early
             # stopping later on.
-            losses = self.get_intermediate_losses(loss_function)
+            losses = self.get_intermediate_losses(loss_function, slice_len)
 
             train_loss_vec.append(losses[0])
             val_loss_vec.append(losses[1])
