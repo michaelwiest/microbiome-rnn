@@ -185,7 +185,7 @@ class LSTM(nn.Module):
                 if slice_incr >= 1.0:
                     slice_len += slice_incr
                 else:
-                    slice_len += slice_len * slice_incr_perc
+                    slice_len += slice_len * slice_incr
                 # Make sure that the slice doesn't get longer than the
                 # amount of data we can feed to it. Could handle this with
                 # padding characters.
