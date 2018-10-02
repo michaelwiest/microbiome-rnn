@@ -24,7 +24,7 @@ As of now does not have a "dream" function for generating predictions from a
 seeded example.
 '''
 class LSTM(nn.Module):
-    def __init__(self, hidden_dim, bs, otu_handler,
+    def __init__(self, hidden_dim, otu_handler,
                  use_gpu=False,
                  LSTM_in_size=None):
         super(LSTM, self).__init__()
@@ -70,9 +70,8 @@ class LSTM(nn.Module):
 
 
         # Non-torch inits.
-        self.batch_size = bs
         self.use_gpu = use_gpu
-        self.hidden = self.__init_hidden()
+        self.hidden = None
 
     def __forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
@@ -105,6 +104,7 @@ class LSTM(nn.Module):
         np.random.seed(1)
 
         self.batch_size = batch_size
+        self.__init_hidden()
 
         if self.use_gpu:
             self.cuda()
@@ -128,7 +128,7 @@ class LSTM(nn.Module):
 
                 # Select a random sample from the data handler.
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                                   slice_len)
+                                                                           slice_len)
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size
@@ -217,7 +217,7 @@ class LSTM(nn.Module):
         self.__init_hidden()
 
         predicted = primer
-        # If we do it the serial way, then primer the model with all examples
+        # If we do it the serial way, then prime the model with all examples
         # up to the most recent one.
         if serial:
             inp = add_cuda_to_variable(predicted[:, :-1], self.use_gpu) \

@@ -133,6 +133,7 @@ class OTUHandler(object):
 
             # For the LSTM we want a whole slice of values to compare against.
             # Not just a single target like in the FFN.
+            # Now this just increments the input by one position for the target.
             if not target_slice:
                 target = sample.iloc[:, start_index + slice_size].values
             else:
