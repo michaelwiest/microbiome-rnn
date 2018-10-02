@@ -4,15 +4,17 @@ import numpy as np
 # from skbio.stats.composition import clr, ilr
 from scipy.stats.mstats import gmean, zscore
 
-'''
-Class for handling OTU data. It generates samples and keeps track of
-training and validation data.
-'''
+
 class OTUHandler(object):
+    '''
+    Class for handling OTU data. It generates samples and keeps track of
+    training and validation data.
+    '''
     def __init__(self, files):
         self.samples = []
         for f in files:
             self.samples.append(pd.read_csv(f, index_col=0))
+        self.original_data = self.samples
         # Keep track of these for getting back and forth from normalized.
         self.raw_samples = copy.deepcopy(self.samples)
         self.strains = list(self.samples[0].index.values)
@@ -22,11 +24,12 @@ class OTUHandler(object):
         self.normalization_method = None
         self.normalization_factors = {}
 
-    '''
-    Set the training and validation data for each sample. Can include
-    a lower bound on size of train/validation
-    '''
+
     def set_train_val(self, percent=0.8, minsize=12):
+        '''
+        Set the training and validation data for each sample. Can include
+        a lower bound on size of train/validation
+        '''
         self.train_data = []
         self.val_data = []
         self.test_data = []  # TODO: implement test data.
@@ -44,12 +47,13 @@ class OTUHandler(object):
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)
 
-    '''
-    Method for normalizing the input data. it also keeps track of the
-    relevant parameters used for normalization so that they can be
-    returned to their raw values for transformation of the predicted data.
-    '''
+
     def normalize_data(self, method='zscore'):
+        '''
+        Method for normalizing the input data. it also keeps track of the
+        relevant parameters used for normalization so that they can be
+        returned to their raw values for transformation of the predicted data.
+        '''
         method = method.lower()
         if method not in ['zscore', 'clr']:
             raise ValueError('Specify "zscore" or "clr" for method')
@@ -67,12 +71,10 @@ class OTUHandler(object):
         self.normalization_factors[method] = {'mean': [],
                                               'std': []}
         for s in self.samples:
-            self.normalization_factors[method]['mean'].append(means(s.values,
-                                                                    axis=1))
+            self.normalization_factors[method]['mean'].append(means(s.values))
             if std is not None:
-                self.normalization_factors[method]['std'].append(std(s.values,
-                                                                     axis=1))
-            new_vals.append(pd.DataFrame(m(s.values),
+                self.normalization_factors[method]['std'].append(std(s.values))
+            new_vals.append(pd.DataFrame(m(s.values, axis=None),
                                          index=s.index,
                                          columns=s.columns))
 
@@ -80,15 +82,16 @@ class OTUHandler(object):
         # Reassign the train and test values given the normalization.
         self.set_train_val()
 
-    '''
-    Function for returning the normalized values to the raw values.
-    This is good for plotting the predicted values versus actual values.
-    '''
+
     def un_normalize_data(self, new_data, parameter_index):
+        '''
+        Function for returning the normalized values to the raw values.
+        This is good for plotting the predicted values versus actual values.
+        parameter_index: index of which input data to use when getting
+                         means and standard deviations.
+        '''
         means = np.array(self.normalization_factors[self.normalization_method]['mean'][parameter_index])
         std = np.array(self.normalization_factors[self.normalization_method]['std'][parameter_index])
-        means = np.expand_dims(means, axis=1).repeat(new_data.shape[1], axis=1)
-        std = np.expand_dims(std, axis=1).repeat(new_data.shape[1], axis=1)
         if self.normalization_method == 'zscore':
             return new_data * std + means
         else:
@@ -98,14 +101,16 @@ class OTUHandler(object):
 
 
 
-    '''
-    Returns data of shape N x num_organisms x slice_size. Selects N random
-    examples from all possible training samples. It selects from them evenly
-    at the moment, but this can be tweaked to select more often from larger
-    samples.
-    '''
+
     def get_N_samples_and_targets(self, N, slice_size,
-                                  train=True, target_slice=True):
+                                  train=True, target_slice=True,
+                                  target_offset=1):
+        '''
+        Returns data of shape N x num_organisms x slice_size. Selects N random
+        examples from all possible training samples. It selects from them evenly
+        at the moment, but this can be tweaked to select more often from larger
+        samples.
+        '''
         samples = []  # Samples to feed to LSTM
         targets = []  # Single target to predict
         if self.train_data is None:
@@ -137,7 +142,9 @@ class OTUHandler(object):
             if not target_slice:
                 target = sample.iloc[:, start_index + slice_size].values
             else:
-                target = sample.iloc[:, start_index + 1: start_index + slice_size + 1].values
+                target = sample.iloc[:,
+                                     start_index + target_offset:
+                                     start_index + slice_size + target_offset].values
             # Store all the values
             samples.append(data)
             targets.append(target)
