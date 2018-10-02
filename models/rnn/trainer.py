@@ -21,7 +21,7 @@ otu_handler = OTUHandler(files)
 
 # Set train and validation split
 otu_handler.set_train_val()
-otu_handler.normalize_data()
+# otu_handler.normalize_data()
 
 use_gpu = torch.cuda.is_available()
 

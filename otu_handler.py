@@ -1,7 +1,7 @@
 import copy
 import pandas as pd
 import numpy as np
-from skbio.stats.composition import clr, ilr
+# from skbio.stats.composition import clr, ilr
 from scipy.stats.mstats import gmean, zscore
 
 '''
