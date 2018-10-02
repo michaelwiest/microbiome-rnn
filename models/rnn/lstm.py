@@ -133,7 +133,7 @@ class LSTM(nn.Module):
                 scores_to_return.append(loss.data.cpu().numpy().item()
                                         / (self.batch_size * num_batches))
             else:
-                scores_to_return.append(loss.data.numpy().item() / self.batch_size
+                scores_to_return.append(loss.data.numpy().item()
                                         / (self.batch_size * num_batches))
         return scores_to_return
 
@@ -198,7 +198,6 @@ class LSTM(nn.Module):
             # Get some train and val losses. These can be used for early
             # stopping later on.
             losses = self.get_intermediate_losses(loss_function, slice_len)
-            print(losses)
             train_loss_vec.append(losses[0])
             val_loss_vec.append(losses[1])
             print('Train loss: {}'.format(losses[0]))
