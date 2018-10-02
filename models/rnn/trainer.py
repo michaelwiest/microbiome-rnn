@@ -23,6 +23,8 @@ otu_handler = OTUHandler(files)
 otu_handler.set_train_val()
 # otu_handler.normalize_data()
 
+print('Loaded in data. Ready to train.\n')
+
 use_gpu = torch.cuda.is_available()
 
 if not os.path.isdir(output_dir):
