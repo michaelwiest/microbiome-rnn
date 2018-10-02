@@ -27,6 +27,9 @@ otu_handler.normalize_data()
 
 use_gpu = torch.cuda.is_available()
 
+if not os.path.isdir(output_dir):
+    os.mkdir(output_dir)
+
 save_params = (os.path.join(output_dir, model_name),
                os.path.join(output_dir, log_name))
 
