@@ -16,6 +16,6 @@ slice_incr_amt = 0
 
 
 run_suffix = '_h128_sl15_rns50'
-model_name = 'model{}.pt'
-log_name = 'log{}.pt'
-output_dir = 'rnn_output'
+model_name = 'model{}.pt'.format(run_suffix)
+log_name = 'log{}.pt'.format(run_suffix)
+output_dir = 'rnn_output'.format(run_suffix)
