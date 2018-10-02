@@ -30,7 +30,7 @@ save_params = (os.path.join(output_dir, model_name),
                os.path.join(output_dir, log_name))
 
 
-rnn = LSTM(hidden_dim, batch_size, otu_handler, use_gpu,
+rnn = LSTM(hidden_dim, otu_handler, use_gpu,
            LSTM_in_size=reduced_num_strains)
 
 
