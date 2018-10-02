@@ -110,7 +110,7 @@ class LSTM(nn.Module):
         # First get some training loss and then a validation loss.
         for is_train in [True, False]:
             loss = 0
-            for b in num_batches:
+            for b in range(num_batches):
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                            slice_len,
                                                                            train=is_train)
