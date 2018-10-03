@@ -14,8 +14,12 @@ reduced_num_strains = 50
 # amount after every epoch. Only used for RNN.
 slice_incr_amt = 0
 
-
-run_suffix = ''
+additional_comments = ''
+run_suffix = '_h{}_sl{}_rns{}_sia{}{}'.format(hidden_dim,
+                                              seq_len,
+                                              reduced_num_strains,
+                                              slice_incr_amt,
+                                              additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.pt'.format(run_suffix)
 output_dir = 'rnn_output'.format(run_suffix)
