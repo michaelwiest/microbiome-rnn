@@ -15,15 +15,16 @@ from helpers.model_helper import *
 import csv
 
 
-'''
-Model for predicting OTU counts of microbes given historical data.
-Uses fully connected layers and an LSTM (could use 1d convolutions in the
-future for better accuracy).
 
-As of now does not have a "dream" function for generating predictions from a
-seeded example.
-'''
 class LSTM(nn.Module):
+    '''
+    Model for predicting OTU counts of microbes given historical data.
+    Uses fully connected layers and an LSTM (could use 1d convolutions in the
+    future for better accuracy).
+
+    As of now does not have a "dream" function for generating predictions from a
+    seeded example.
+    '''
     def __init__(self, hidden_dim, otu_handler,
                  use_gpu=False,
                  LSTM_in_size=None):
@@ -228,16 +229,17 @@ class LSTM(nn.Module):
 
         return train_loss_vec, val_loss_vec
 
-    '''
-    Function for letting the LSTM "dream" up new data. Given a primer it will
-    generate examples for as long as specified.
 
-    The "serial" argument determines wheter or not examples are fed one
-    at a time to the LSTM with no gradient zeroing, or fed as a batch
-    and then zeroed everytime. serial=True has been giving better results.
-    '''
     def daydream(self, primer, predict_len=100, window_size=20,
                  serial=True):
+        '''
+        Function for letting the LSTM "dream" up new data. Given a primer it will
+        generate examples for as long as specified.
+
+        The "serial" argument determines wheter or not examples are fed one
+        at a time to the LSTM with no gradient zeroing, or fed as a batch
+        and then zeroed everytime. serial=True has been giving better results.
+        '''
         self.batch_size = 1
         self.__init_hidden()
 

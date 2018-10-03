@@ -4,11 +4,12 @@ import numpy as np
 # from skbio.stats.composition import clr, ilr
 from scipy.stats.mstats import gmean, zscore
 
-'''
-Class for handling OTU data. It generates samples and keeps track of
-training and validation data.
-'''
+
 class OTUHandler(object):
+    '''
+    Class for handling OTU data. It generates samples and keeps track of
+    training and validation data.
+    '''
     def __init__(self, files):
         self.samples = []
         for f in files:
@@ -22,11 +23,12 @@ class OTUHandler(object):
         self.normalization_method = None
         self.normalization_factors = {}
 
-    '''
-    Set the training and validation data for each sample. Can include
-    a lower bound on size of train/validation
-    '''
+
     def set_train_val(self, percent=0.8, minsize=12):
+        '''
+        Set the training and validation data for each sample. Can include
+        a lower bound on size of train/validation
+        '''
         self.train_data = []
         self.val_data = []
         self.test_data = []  # TODO: implement test data.
@@ -44,12 +46,13 @@ class OTUHandler(object):
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)
 
-    '''
-    Method for normalizing the input data. it also keeps track of the
-    relevant parameters used for normalization so that they can be
-    returned to their raw values for transformation of the predicted data.
-    '''
+
     def normalize_data(self, method='zscore'):
+        '''
+        Method for normalizing the input data. it also keeps track of the
+        relevant parameters used for normalization so that they can be
+        returned to their raw values for transformation of the predicted data.
+        '''
         method = method.lower()
         if method not in ['zscore', 'clr']:
             raise ValueError('Specify "zscore" or "clr" for method')
@@ -80,11 +83,14 @@ class OTUHandler(object):
         # Reassign the train and test values given the normalization.
         self.set_train_val()
 
-    '''
-    Function for returning the normalized values to the raw values.
-    This is good for plotting the predicted values versus actual values.
-    '''
+
     def un_normalize_data(self, new_data, parameter_index):
+        '''
+        Function for returning the normalized values to the raw values.
+        This is good for plotting the predicted values versus actual values.
+        '''
+        # TODO: THIS DOESN'T WORK PROPERLY. BECAUSE THE LOGGED VALUES FROM
+        # ABOVE ARE TAKEN ON AXIS 1 AND THE NORMALIZATION IS DONE ON AXIS 0.
         means = np.array(self.normalization_factors[self.normalization_method]['mean'][parameter_index])
         std = np.array(self.normalization_factors[self.normalization_method]['std'][parameter_index])
         means = np.expand_dims(means, axis=1).repeat(new_data.shape[1], axis=1)
@@ -95,17 +101,14 @@ class OTUHandler(object):
             return np.exp(new_data) * means
 
 
-
-
-
-    '''
-    Returns data of shape N x num_organisms x slice_size. Selects N random
-    examples from all possible training samples. It selects from them evenly
-    at the moment, but this can be tweaked to select more often from larger
-    samples.
-    '''
     def get_N_samples_and_targets(self, N, slice_size,
                                   train=True, target_slice=True):
+        '''
+        Returns data of shape N x num_organisms x slice_size. Selects N random
+        examples from all possible training samples. It selects from them evenly
+        at the moment, but this can be tweaked to select more often from larger
+        samples.
+        '''
         samples = []  # Samples to feed to LSTM
         targets = []  # Single target to predict
         if self.train_data is None:
