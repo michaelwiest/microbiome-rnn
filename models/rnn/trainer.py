@@ -21,7 +21,7 @@ otu_handler = OTUHandler(files)
 
 # Set train and validation split
 otu_handler.set_train_val()
-# otu_handler.normalize_data()
+otu_handler.normalize_data()
 
 print('Loaded in data. Ready to train.\n')
 
