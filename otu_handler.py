@@ -102,7 +102,8 @@ class OTUHandler(object):
 
 
     def get_N_samples_and_targets(self, N, slice_size,
-                                  train=True, target_slice=True):
+                                  train=True, target_slice=True,
+                                  slice_offset=1):
         '''
         Returns data of shape N x num_organisms x slice_size. Selects N random
         examples from all possible training samples. It selects from them evenly
@@ -140,7 +141,8 @@ class OTUHandler(object):
             if not target_slice:
                 target = sample.iloc[:, start_index + slice_size].values
             else:
-                target = sample.iloc[:, start_index + 1: start_index + slice_size + 1].values
+                target = sample.iloc[:, start_index + slice_offset:
+                                        start_index + slice_size + slice_offset].values
             # Store all the values
             samples.append(data)
             targets.append(target)
