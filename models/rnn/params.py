@@ -15,7 +15,7 @@ reduced_num_strains = 50
 slice_incr_amt = 0
 
 
-run_suffix = '_h128_sl15_rns50'
+run_suffix = ''
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.pt'.format(run_suffix)
 output_dir = 'rnn_output'.format(run_suffix)
