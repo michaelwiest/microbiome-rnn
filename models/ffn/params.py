@@ -15,7 +15,12 @@ reduced_num_strains = 80
 slice_incr_amt = 1
 
 
-run_suffix = ''
-model_name = 'model{}.pt'
-log_name = 'log{}.pt'
+additional_comments = ''
+run_suffix = '_h{}_sl{}_rns{}_sia{}{}'.format(hidden_dim,
+                                              seq_len,
+                                              reduced_num_strains,
+                                              slice_incr_amt,
+                                              additional_comments)
+model_name = 'model{}.pt'.format(run_suffix)
+log_name = 'log{}.csv'.format(run_suffix)
 output_dir = 'ffn_output'
