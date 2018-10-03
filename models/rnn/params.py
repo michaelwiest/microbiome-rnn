@@ -22,4 +22,4 @@ run_suffix = '_h{}_sl{}_rns{}_sia{}{}'.format(hidden_dim,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.pt'.format(run_suffix)
-output_dir = 'rnn_output')
+output_dir = 'rnn_output'
