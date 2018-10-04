@@ -75,7 +75,7 @@ class OTUHandler(object):
             if std is not None:
                 self.normalization_factors[method]['std'].append(std(s.values,
                                                                      axis=0))
-            new_vals.append(pd.DataFrame(m(s.values),
+            new_vals.append(pd.DataFrame(m(s.values, axis=0),
                                          index=s.index,
                                          columns=s.columns))
 
