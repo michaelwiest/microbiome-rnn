@@ -12,7 +12,7 @@ reduced_num_strains = 50
 # If this value is below one then it increases by that percent
 # every epoch. If greater than one then it increases by that fixed
 # amount after every epoch. Only used for RNN.
-slice_incr_amt = 0
+slice_incr_frequency = None
 
 additional_comments = ''
 run_suffix = '_h{}_sl{}_rns{}_sia{}{}'.format(hidden_dim,

@@ -140,7 +140,7 @@ class LSTM(nn.Module):
 
 
     def do_training(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
-              slice_incr=None, save_params=None):
+              slice_incr_frequency=None, save_params=None):
         np.random.seed(1)
 
         self.batch_size = batch_size
@@ -206,17 +206,14 @@ class LSTM(nn.Module):
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr is not None or slice_incr != 0:
-                # Handle percentage increase or integer increase.
-                if slice_incr >= 1.0:
-                    slice_len += slice_incr
-                else:
-                    slice_len += slice_len * slice_incr
-                # Make sure that the slice doesn't get longer than the
-                # amount of data we can feed to it. Could handle this with
-                # padding characters.
-                slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
-                print('Increased slice length to: {}'.format(slice_len))
+            if slice_incr_frequency is not None or slice_incr_frequency != 0:
+                if epoch != 0 and epoch % slice_incr_frequency == 0:
+                    slice_len += 1
+                    # Make sure that the slice doesn't get longer than the
+                    # amount of data we can feed to it. Could handle this with
+                    # padding characters.
+                    slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
+                    print('Increased slice length to: {}'.format(slice_len))
 
             # Save the model and logging information.
             if save_params is not None:

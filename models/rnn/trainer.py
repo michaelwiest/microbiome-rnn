@@ -43,5 +43,5 @@ train_loss, val_loss = rnn.do_training(seq_len, batch_size,
                                        learning_rate,
                                        samples_per_epoch,
                                        save_params=save_params,
-                                       slice_incr=slice_incr_amt
+                                       slice_incr_frequency=slice_incr_frequency
                                        )
