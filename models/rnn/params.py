@@ -15,10 +15,10 @@ reduced_num_strains = 50
 slice_incr_frequency = None
 
 additional_comments = ''
-run_suffix = '_h{}_sl{}_rns{}_sia{}{}'.format(hidden_dim,
+run_suffix = '_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
-                                              slice_incr_amt,
+                                              slice_incr_frequency,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.csv'.format(run_suffix)
