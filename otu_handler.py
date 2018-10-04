@@ -71,10 +71,10 @@ class OTUHandler(object):
                                               'std': []}
         for s in self.samples:
             self.normalization_factors[method]['mean'].append(means(s.values,
-                                                                    axis=1))
+                                                                    axis=0))
             if std is not None:
                 self.normalization_factors[method]['std'].append(std(s.values,
-                                                                     axis=1))
+                                                                     axis=0))
             new_vals.append(pd.DataFrame(m(s.values),
                                          index=s.index,
                                          columns=s.columns))
@@ -84,17 +84,30 @@ class OTUHandler(object):
         self.set_train_val()
 
 
-    def un_normalize_data(self, new_data, parameter_index):
+    def un_normalize_data(self, new_data,
+                          sample_index,
+                          sample_timepoint_range):
         '''
         Function for returning the normalized values to the raw values.
         This is good for plotting the predicted values versus actual values.
+        sample_timepoint_range: tuple or list of: (start_index, end_index)
         '''
-        # TODO: THIS DOESN'T WORK PROPERLY. BECAUSE THE LOGGED VALUES FROM
-        # ABOVE ARE TAKEN ON AXIS 1 AND THE NORMALIZATION IS DONE ON AXIS 0.
-        means = np.array(self.normalization_factors[self.normalization_method]['mean'][parameter_index])
-        std = np.array(self.normalization_factors[self.normalization_method]['std'][parameter_index])
-        means = np.expand_dims(means, axis=1).repeat(new_data.shape[1], axis=1)
-        std = np.expand_dims(std, axis=1).repeat(new_data.shape[1], axis=1)
+
+        if (type(sample_timepoint_range) not in [list, tuple] or
+            sample_timepoint_range[1] <= sample_timepoint_range[0]):
+            raise ValueError('Please make the values fo the time range in '
+                             'increasing order and a list or tuple.')
+
+
+        means = np.array(self.normalization_factors[self.normalization_method]['mean'][sample_index])
+        std = np.array(self.normalization_factors[self.normalization_method]['std'][sample_index])
+
+        # Get the means and standard deviations of the input data over that
+        # range and average it. These are used to "unnormalize" the input.
+        means = np.mean(means[sample_timepoint_range[0]:
+                              sample_timepoint_range[1]])
+        std = np.mean(std[sample_timepoint_range[0]:
+                          sample_timepoint_range[1]])
         if self.normalization_method == 'zscore':
             return new_data * std + means
         else:
