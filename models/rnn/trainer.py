@@ -1,4 +1,5 @@
 from lstm import LSTM
+from conv_lstm import ConvLSTM
 import torch
 import os
 import sys
@@ -33,9 +34,13 @@ if not os.path.isdir(output_dir):
 save_params = (os.path.join(output_dir, model_name),
                os.path.join(output_dir, log_name))
 
-
-rnn = LSTM(hidden_dim, otu_handler, use_gpu,
-           LSTM_in_size=reduced_num_strains)
+if use_convs:
+    print('Using Conv-LSTM')
+    rnn = ConvLSTM(hidden_dim, otu_handler, use_gpu,
+                   LSTM_in_size=reduced_num_strains)
+else:
+    rnn = LSTM(hidden_dim, otu_handler, use_gpu,
+               LSTM_in_size=reduced_num_strains)
 
 
 train_loss, val_loss = rnn.do_training(seq_len, batch_size,

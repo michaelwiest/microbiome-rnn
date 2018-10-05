@@ -14,6 +14,11 @@ reduced_num_strains = 50
 # amount after every epoch. Only used for RNN.
 slice_incr_frequency = None
 
+
+# Use the conv-LSTM?
+use_convs = True
+
+
 additional_comments = ''
 run_suffix = '_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
                                               seq_len,
