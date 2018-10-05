@@ -73,6 +73,7 @@ def main():
             break
         i += 1
 
+    num_strains_matched = len(strains)
     print('Got intersection strains.')
 
     for i in range(len(raws)):
@@ -90,7 +91,8 @@ def main():
             raws[i] = raws[i].rolling(rolling_window, axis=1, min_periods=1).mean()
 
         # Write the values
-        raw_fname = ''.join(files[i].split('.')[:-1]) + '_sub_{}.csv'.format(N_strains)
+        raw_fname = ''.join(files[i].split('.')[:-1]) + '_sub_{}.csv'.format(min(N_strains,
+                                                                                 num_strains_matched))
 
         raws[i].to_csv(os.path.join(output_dir, raw_fname))
 
