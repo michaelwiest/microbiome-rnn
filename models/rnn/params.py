@@ -20,10 +20,11 @@ use_convs = True
 
 
 additional_comments = ''
-run_suffix = '_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
+run_suffix = '_h{}_sl{}_rns{}_sif{}_conv{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
                                               slice_incr_frequency,
+                                              str(use_convs),
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.csv'.format(run_suffix)
