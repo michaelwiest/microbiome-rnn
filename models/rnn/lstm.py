@@ -74,13 +74,13 @@ class LSTM(nn.Module):
         self.use_gpu = use_gpu
         self.hidden = None
 
-    def forward(self, input_data):
-        # input_data is shape: sequence_size x batch x num_strains
-        input_data = self.before_lstm(input_data)
-        output, self.hidden = self.lstm(input_data, self.hidden)
-        output = self.after_lstm(output)
+    def forward(self, data):
+        # data is shape: sequence_size x batch x num_strains
+        data = self.before_lstm(data)
+        data, self.hidden = self.lstm(data, self.hidden)
+        data = self.after_lstm(data)
 
-        return output.transpose(0, 1).transpose(1, 2)
+        return data.transpose(0, 1).transpose(1, 2)
 
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)

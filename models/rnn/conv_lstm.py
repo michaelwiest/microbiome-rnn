@@ -75,12 +75,15 @@ class ConvLSTM(LSTM):
                                kernel_size=4, stride=2, padding=3),
             nn.ReLU()
         )
+        self.lin_final = nn.Linear(self.otu_handler.num_strains,
+                                   self.otu_handler.num_strains)
 
-    def forward(self, input_data):
-        # input_data is shape: sequence_size x batch x num_strains
-        input_data = input_data.transpose(0,1).transpose(1, 2)
-        input_data = self.conv_element(input_data)
-        input_data = input_data.transpose(0, 2).transpose(1, 2)
-        output, self.hidden = self.lstm(input_data, self.hidden)
-        output = self.deconv_element(output.transpose(0,1).transpose(1,2))
-        return output
+    def forward(self, data):
+        # data is shape: sequence_size x batch x num_strains
+        data = data.transpose(0,1).transpose(1, 2)
+        data = self.conv_element(data)
+        data = data.transpose(0, 2).transpose(1, 2)
+        data, self.hidden = self.lstm(data, self.hidden)
+        data = self.deconv_element(data.transpose(0,1).transpose(1,2))
+        data = self.lin_final(data.transpose(0,1).transpose(0, 2))
+        return data.transpose(0,1).transpose(1, 2)
