@@ -157,6 +157,13 @@ class LSTM(nn.Module):
         train_loss_vec = []
         val_loss_vec = []
 
+        # Get some initial losses.
+        losses = self.get_intermediate_losses(loss_function, slice_len)
+        train_loss_vec.append(losses[0])
+        val_loss_vec.append(losses[1])
+        print('Train loss: {}'.format(losses[0]))
+        print('  Val loss: {}'.format(losses[1]))
+
         for epoch in range(epochs):
             iterate = 0
 
