@@ -280,8 +280,8 @@ class LSTM(nn.Module):
             else:
                 output = self.forward(inp)[:, :, -1].transpose(0, 1).data.numpy()
 
-            # Need to reshape the tensor so it can be concatenated. 
-            output = np.expand_dims(output.transpose(1, 0), -1)
+            # Need to reshape the tensor so it can be concatenated.
+            output = np.expand_dims(output, 1)
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
