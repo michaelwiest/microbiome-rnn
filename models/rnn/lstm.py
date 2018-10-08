@@ -252,26 +252,36 @@ class LSTM(nn.Module):
         at a time to the LSTM with no gradient zeroing, or fed as a batch
         and then zeroed everytime. serial=True has been giving better results.
         '''
-        self.batch_size = 1
+        if len(primer.shape) != 3:
+            raise ValueError('Please provide a 3d array of shape: '
+                             '(num_strains, slice_length, batch_size)')
+        self.batch_size = primer.shape[-1]
         self.__init_hidden()
 
         predicted = primer
         # If we do it the serial way, then prime the model with all examples
         # up to the most recent one.
         if serial:
-            inp = add_cuda_to_variable(predicted[:, :-1], self.use_gpu) \
-                .unsqueeze(-1) \
+            inp = add_cuda_to_variable(predicted[:, :-1],
+                                       self.use_gpu,
+                                       requires_grad=False) \
                 .transpose(0, 2) \
                 .transpose(0, 1)[-window_size:, :, :]
             _ = self.forward(inp)
         for p in range(predict_len):
             if serial:
-                inp = add_cuda_to_variable(predicted[:, -1], self.use_gpu)
+                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu)
             else:
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
-            output = self.forward(inp)[-1].transpose(0, 1).data.numpy()
+            if self.use_gpu:
+                output = self.forward(inp)[:, :, -1].transpose(0, 1).data.cpu().numpy()
+            else:
+                output = self.forward(inp)[:, :, -1].transpose(0, 1).data.numpy()
+
+            # Need to reshape the tensor so it can be concatenated. 
+            output = np.expand_dims(output.transpose(1, 0), -1)
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
