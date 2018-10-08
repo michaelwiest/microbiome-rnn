@@ -74,13 +74,13 @@ class LSTM(nn.Module):
         self.use_gpu = use_gpu
         self.hidden = None
 
-    def __forward(self, input_data):
-        # input_data is shape: sequence_size x batch x num_strains
-        input_data = self.before_lstm(input_data)
-        output, self.hidden = self.lstm(input_data, self.hidden)
-        output = self.after_lstm(output)
+    def forward(self, data):
+        # data is shape: sequence_size x batch x num_strains
+        data = self.before_lstm(data)
+        data, self.hidden = self.lstm(data, self.hidden)
+        data = self.after_lstm(data)
 
-        return output
+        return data.transpose(0, 1).transpose(1, 2)
 
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
@@ -122,8 +122,9 @@ class LSTM(nn.Module):
                                                requires_grad=False)
 
                 self.__init_hidden()
-                outputs = self.__forward(data)
-                outputs = outputs.transpose(0, 1).transpose(1, 2)
+                outputs = self.forward(data)
+                output_len = outputs.size(2)
+                targets = targets[:, :, -output_len:]
 
                 # Get the loss associated with this validation data.
                 for bat in range(self.batch_size):
@@ -181,7 +182,8 @@ class LSTM(nn.Module):
                 #   from: batch x num_strains x sequence_size
                 #   to: sequence_size x batch x num_strains
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                targets = add_cuda_to_variable(targets, self.use_gpu)
+                targets = add_cuda_to_variable(targets, self.use_gpu,
+                                               requires_grad=False)
                 self.zero_grad()
 
                 # Also, we need to clear out the hidden state of the LSTM,
@@ -189,7 +191,13 @@ class LSTM(nn.Module):
                 self.__init_hidden()
 
                 # Do a forward pass of the model.
-                outputs = self.__forward(data).transpose(0, 1).transpose(1, 2)
+                outputs = self.forward(data)
+
+                # Beacuse of potential convolution losing the size of the
+                # input we only select as many output examples to compare
+                # against as the model can generate.
+                output_len = outputs.size(2)
+                targets = targets[:, :, -output_len:]
 
                 # For this round set our loss to zero and then compare
                 # accumulated losses for all of the batch examples.
@@ -255,7 +263,7 @@ class LSTM(nn.Module):
                 .unsqueeze(-1) \
                 .transpose(0, 2) \
                 .transpose(0, 1)[-window_size:, :, :]
-            _ = self.__forward(inp)
+            _ = self.forward(inp)
         for p in range(predict_len):
             if serial:
                 inp = add_cuda_to_variable(predicted[:, -1], self.use_gpu)
@@ -263,7 +271,7 @@ class LSTM(nn.Module):
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
-            output = self.__forward(inp)[-1].transpose(0, 1).data.numpy()
+            output = self.forward(inp)[-1].transpose(0, 1).data.numpy()
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
