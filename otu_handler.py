@@ -10,10 +10,17 @@ class OTUHandler(object):
     Class for handling OTU data. It generates samples and keeps track of
     training and validation data.
     '''
-    def __init__(self, files):
+    def __init__(self, files, test_files=None):
         self.samples = []
         for f in files:
             self.samples.append(pd.read_csv(f, index_col=0))
+        if test_files is not None:
+            self.test_data = []
+            for f in test_files:
+                self.test_data.append(pd.read_csv(f, index_col=0))
+        else:
+            self.test_data = None
+
         # Keep track of these for getting back and forth from normalized.
         self.raw_samples = copy.deepcopy(self.samples)
         self.strains = list(self.samples[0].index.values)
@@ -31,7 +38,6 @@ class OTUHandler(object):
         '''
         self.train_data = []
         self.val_data = []
-        self.test_data = []  # TODO: implement test data.
         temp_sizes = []
         for sample in self.samples:
             index = int(percent * sample.shape[1])
@@ -45,7 +51,6 @@ class OTUHandler(object):
 
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)
-
 
     def normalize_data(self, method='zscore'):
         '''
@@ -69,18 +74,24 @@ class OTUHandler(object):
         new_vals = []
         self.normalization_factors[method] = {'mean': [],
                                               'std': []}
-        for s in self.samples:
-            self.normalization_factors[method]['mean'].append(means(s.values,
-                                                                    axis=0))
-            if std is not None:
-                self.normalization_factors[method]['std'].append(std(s.values,
-                                                                     axis=0))
-            new_vals.append(pd.DataFrame(m(s.values, axis=0),
-                                         index=s.index,
-                                         columns=s.columns))
-
-        self.samples = new_vals
-        # Reassign the train and test values given the normalization.
+        for i, which_data in enumerate([self.samples, self.test_data]):
+            if which_data is not None:
+                new_vals = []
+                for s in which_data:
+                    self.normalization_factors[method]['mean'].append(means(s.values,
+                                                                            axis=0))
+                    if std is not None:
+                        self.normalization_factors[method]['std'].append(std(s.values,
+                                                                             axis=0))
+                    new_vals.append(pd.DataFrame(m(s.values, axis=0),
+                                                 index=s.index,
+                                                 columns=s.columns))
+                # This is sort of a hack which is annoying.
+                if i == 0:
+                    self.samples = new_vals
+                elif i == 1:
+                    self.test_data = new_vals
+                # Reassign the train and test values given the normalization.
         self.set_train_val()
 
 
@@ -115,7 +126,7 @@ class OTUHandler(object):
 
 
     def get_N_samples_and_targets(self, N, slice_size,
-                                  train=True, target_slice=True,
+                                  which_data='train', target_slice=True,
                                   slice_offset=1):
         '''
         Returns data of shape N x num_organisms x slice_size. Selects N random
@@ -123,6 +134,20 @@ class OTUHandler(object):
         at the moment, but this can be tweaked to select more often from larger
         samples.
         '''
+        which_data = which_data.lower()
+        if which_data not in ['train', 'validation', 'test']:
+            raise ValueError('Please specify either: train, validaiton, or test'
+                             ' for argument "which_sample"')
+        if self.test_data is None and which_data == 'test':
+            raise ValueError('Do not select for test data when none is set.')
+
+        if which_data == 'train':
+            data_source = self.train_data
+        elif which_data == 'validation':
+            data_source = self.val_data
+        elif which_data == 'test':
+            data_source = self.test_data
+
         samples = []  # Samples to feed to LSTM
         targets = []  # Single target to predict
         if self.train_data is None:
@@ -132,17 +157,16 @@ class OTUHandler(object):
         # Samples from data based on number of samples. Ie, samples with more
         # data points get more selection.
         rands = np.random.rand(N)
-        all_sum = np.sum([df.shape[1] for df in self.train_data])
-        bins = np.cumsum([df.shape[1] / all_sum for df in self.train_data])
+        all_sum = np.sum([df.shape[1] for df in data_source])
+        bins = np.cumsum([df.shape[1] / all_sum for df in data_source])
         which_samples = np.argmin(np.abs([bins - rand for rand in rands]),
                                   axis=1)
-
+        # print(which_data)
+        # print(which_samples)
         # Pick a random sample and whether or not it is training or validation.
         for ws in which_samples:
-            if train:
-                sample = self.train_data[ws]
-            else:
-                sample = self.val_data[ws]
+            sample = data_source[ws]
+            # print(ws)
             # Pick a random starting point in the example. Get the data in
             # that slice and then the values immediately after.
             start_index = np.random.randint(sample.shape[1] - slice_size)

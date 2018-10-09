@@ -110,12 +110,17 @@ class LSTM(nn.Module):
         scores_to_return = []
 
         # First get some training loss and then a validation loss.
-        for is_train in [True, False]:
+        if self.otu_handler.test_data is not None:
+            samples = ['train', 'validation', 'test']
+        else:
+            samples = ['train', 'validation']
+
+        for which_sample in samples:
             loss = 0
             for b in range(num_batches):
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                            slice_len,
-                                                                           train=is_train)
+                                                                           which_data=which_sample)
                 data = add_cuda_to_variable(data, self.use_gpu,
                                             requires_grad=False).transpose(1, 2).transpose(0, 1)
                 targets = add_cuda_to_variable(targets, self.use_gpu,
@@ -139,6 +144,27 @@ class LSTM(nn.Module):
                                         / (self.batch_size * num_batches))
         return scores_to_return
 
+    def __print_and_log_losses(self, new_losses, save_params):
+        train_l = new_losses[0]
+        val_l = new_losses[1]
+        self.train_loss_vec.append(train_l)
+        self.val_loss_vec.append(val_l)
+        print('Train loss: {}'.format(train_l))
+        print('  Val loss: {}'.format(val_l))
+
+        if len(new_losses) == 3:
+            test_l = new_losses[2]
+            self.test_loss_vec.append(test_l)
+            print(' Test loss: {}'.format(test_l))
+
+        if save_params is not None:
+            with open(save_params[1], 'w+') as csvfile:
+                writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(self.train_loss_vec)
+                writer.writerow(self.val_loss_vec)
+                if len(new_losses) == 3:
+                    writer.writerow(self.test_loss_vec)
+
 
     def do_training(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
               slice_incr_frequency=None, save_params=None):
@@ -155,15 +181,13 @@ class LSTM(nn.Module):
         optimizer = optim.Adam(self.parameters(), lr=lr)
 
         # For logging the data for plotting
-        train_loss_vec = []
-        val_loss_vec = []
+        self.train_loss_vec = []
+        self.val_loss_vec = []
+        self.test_loss_vec = []
 
         # Get some initial losses.
         losses = self.get_intermediate_losses(loss_function, slice_len)
-        train_loss_vec.append(losses[0])
-        val_loss_vec.append(losses[1])
-        print('Train loss: {}'.format(losses[0]))
-        print('  Val loss: {}'.format(losses[1]))
+        self.__print_and_log_losses(losses, save_params)
 
         for epoch in range(epochs):
             iterate = 0
@@ -214,14 +238,11 @@ class LSTM(nn.Module):
             # Get some train and val losses. These can be used for early
             # stopping later on.
             losses = self.get_intermediate_losses(loss_function, slice_len)
-            train_loss_vec.append(losses[0])
-            val_loss_vec.append(losses[1])
-            print('Train loss: {}'.format(losses[0]))
-            print('  Val loss: {}'.format(losses[1]))
+            self.__print_and_log_losses(losses, save_params)
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr_frequency is not None or slice_incr_frequency != 0:
+            if slice_incr_frequency is not None or slice_incr_frequency > 0:
                 if epoch != 0 and epoch % slice_incr_frequency == 0:
                     slice_len += 1
                     # Make sure that the slice doesn't get longer than the
@@ -233,14 +254,7 @@ class LSTM(nn.Module):
             # Save the model and logging information.
             if save_params is not None:
                 torch.save(self.state_dict(), save_params[0])
-                with open(save_params[1], 'w+') as csvfile:
-                    writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-                    writer.writerow(train_loss_vec)
-                    writer.writerow(val_loss_vec)
                 print('Saved model state to: {}'.format(save_params[0]))
-
-        return train_loss_vec, val_loss_vec
-
 
     def daydream(self, primer, predict_len=100, window_size=20,
                  serial=True):
