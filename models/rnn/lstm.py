@@ -242,7 +242,7 @@ class LSTM(nn.Module):
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr_frequency is not None or slice_incr_frequency != 0:
+            if slice_incr_frequency is not None or slice_incr_frequency > 0:
                 if epoch != 0 and epoch % slice_incr_frequency == 0:
                     slice_len += 1
                     # Make sure that the slice doesn't get longer than the
