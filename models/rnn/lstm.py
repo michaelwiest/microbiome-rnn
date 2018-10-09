@@ -270,7 +270,7 @@ class LSTM(nn.Module):
             _ = self.forward(inp)
         for p in range(predict_len):
             if serial:
-                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu)
+                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
             else:
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
