@@ -28,16 +28,19 @@ class EncoderDecoder(nn.Module):
     def __init__(self, hidden_dim, otu_handler,
                  use_gpu=False,
                  LSTM_in_size=None):
-        super(LSTM, self).__init__()
+        super(EncoderDecoder, self).__init__()
         self.hidden_dim = hidden_dim
         self.otu_handler = otu_handler
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
+
         self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-        self.decoder = nn.LSTM(LSTM_in_size, hidden_dim, 1)
+        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, 1)
+        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, 1)
+
 
         # Compression layers from raw number of inputs to reduced number
-        self.before_lstm = nn.Sequential(
+        self.strain_compressor = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, hidden_dim),
             # nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
@@ -47,8 +50,38 @@ class EncoderDecoder(nn.Module):
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             nn.Tanh()
         )
+        self.between_encoder_decoder = nn.Sequential(
+            nn.Linear(LSTM_in_size, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, LSTM_in_size),
+            nn.Tanh()
+            )
+
         # Expansion layers from reduced number to raw number of strains
-        self.after_lstm = nn.Sequential(
+        self.after_lstm_forward = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            # nn.BatchNorm1d(hidden_dim),
+            nn.Tanh(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, self.otu_handler.num_strains),
+            # nn.BatchNorm1d(self.otu_handler.num_strains)
+            # nn.Tanh()
+        )
+        self.after_lstm_backward = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.Tanh(),
@@ -70,19 +103,57 @@ class EncoderDecoder(nn.Module):
             # nn.Tanh()
         )
 
-
         # Non-torch inits.
         self.use_gpu = use_gpu
         self.hidden = None
 
-    def __forward(self, input_data):
-        # input_data is shape: sequence_size x batch x num_strains
-        input_data = self.before_lstm(input_data)
-        output, self.hidden = self.encoder(input_data, self.hidden)
 
-        output = self.after_lstm(output)
+    def forward(self, input_data, teacher_data=None):
+        # Teacher data should be a tuple of length two where the first value
+        # is the data corresponding to the future prediction and the
+        # second value is the data corresponding to the reversed input.
+        # data is shape: sequence_size x batch x num_strains
+        num_predictions = input_data.size(0)
 
-        return output
+        d = self.strain_compressor(input_data)
+        _, self.hidden = self.encoder(d, self.hidden)
+
+        forward_hidden = self.hidden
+        backward_hidden = self.hidden
+
+        # Get the last input example.
+        forward_inp = d[-1, :, :].unsqueeze(0)
+        backward_inp = d[-1, :, :].unsqueeze(0)
+
+        for i in range(num_predictions):
+
+            forward, forward_hidden = self.decoder_forward(forward_inp,
+                                                           forward_hidden)
+            backward, backward_hidden = self.decoder_backward(backward_inp,
+                                                              backward_hidden)
+            forward = self.after_lstm_forward(forward)
+            backward = self.after_lstm_backward(backward)
+
+            # Add our prediction to the list of predictions.
+            if i == 0:
+                forward_pred = forward
+                backward_pred = backward
+            else:
+                forward_pred = torch.cat((forward_pred,
+                                          forward), 0)
+                backward_pred = torch.cat((backward_pred,
+                                          backward), 0)
+
+            # If there is no teacher data then use the most recent prediction
+            # to make the next prediction. Otherwise use the teacher data.
+            if teacher_data is None:
+                forward_inp = self.strain_compressor(forward)
+                backward_inp = self.strain_compressor(backward)
+            else:
+                forward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
+                backward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
+
+        return forward_pred, backward_pred
 
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
@@ -101,8 +172,8 @@ class EncoderDecoder(nn.Module):
                                                 self.batch_size,
                                                 self.hidden_dim))
                            )
-
     def get_intermediate_losses(self, loss_function, slice_len,
+                                teacher_force_frac,
                                 num_batches=10):
         '''
         This generates some scores
@@ -112,37 +183,86 @@ class EncoderDecoder(nn.Module):
         scores_to_return = []
 
         # First get some training loss and then a validation loss.
-        for is_train in [True, False]:
+        if self.otu_handler.test_data is not None:
+            samples = ['train', 'validation', 'test']
+        else:
+            samples = ['train', 'validation']
+
+        for which_sample in samples:
             loss = 0
             for b in range(num_batches):
-                data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                # Select a random sample from the data handler.
+                data, forward_targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                            slice_len,
-                                                                           train=is_train)
-                data = add_cuda_to_variable(data, self.use_gpu,
-                                            requires_grad=False).transpose(1, 2).transpose(0, 1)
-                targets = add_cuda_to_variable(targets, self.use_gpu,
-                                               requires_grad=False)
+                                                                           slice_offset=slice_len)
+                # this is the data that the backward decoder will reconstruct
+                backward_targets = np.flip(data, axis=2).copy()
+                # Transpose
+                #   from: batch x num_strains x sequence_size
+                #   to: sequence_size x batch x num_strains
 
+                data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
+                forward_targets = add_cuda_to_variable(forward_targets, self.use_gpu,
+                                                       requires_grad=False)
+                backward_targets = add_cuda_to_variable(backward_targets, self.use_gpu,
+                                                        requires_grad=False)
+                self.zero_grad()
+
+                # Also, we need to clear out the hidden state of the LSTM,
+                # detaching it from its history on the last instance.
                 self.__init_hidden()
-                outputs = self.__forward(data)
-                outputs = outputs.transpose(0, 1).transpose(1, 2)
 
+                if np.random.rand() < teacher_force_frac:
+                    tf = (forward_targets.transpose(1, 2).transpose(0, 1),
+                          backward_targets.transpose(1, 2).transpose(0, 1))
+                else:
+                    tf = None
+                # Do a forward pass of the model.
+                forward_preds, backward_preds = self.forward(data,
+                                                             teacher_data=tf)
                 # Get the loss associated with this validation data.
-                for bat in range(self.batch_size):
-                    loss += loss_function(outputs[bat, :], targets[bat, :])
-
+                floss = loss_function(forward_preds, forward_targets)
+                bloss = loss_function(backward_preds, backward_targets)
+                loss += floss + bloss
             # Store a normalized loss.
             if self.use_gpu:
                 scores_to_return.append(loss.data.cpu().numpy().item()
-                                        / (self.batch_size * num_batches))
+                                        / (2 * num_batches))
             else:
                 scores_to_return.append(loss.data.numpy().item()
-                                        / (self.batch_size * num_batches))
+                                        / (2 * num_batches))
         return scores_to_return
 
+    def __print_and_log_losses(self, new_losses, save_params):
+        train_l = new_losses[0]
+        val_l = new_losses[1]
+        self.train_loss_vec.append(train_l)
+        self.val_loss_vec.append(val_l)
+        print('Train loss: {}'.format(train_l))
+        print('  Val loss: {}'.format(val_l))
 
-    def do_training(self, slice_len, batch_size, epochs, lr, samples_per_epoch,
-              slice_incr_frequency=None, save_params=None):
+        if len(new_losses) == 3:
+            test_l = new_losses[2]
+            self.test_loss_vec.append(test_l)
+            print(' Test loss: {}'.format(test_l))
+
+        if save_params is not None:
+            with open(save_params[1], 'w+') as csvfile:
+                writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow(self.train_loss_vec)
+                writer.writerow(self.val_loss_vec)
+                if len(new_losses) == 3:
+                    writer.writerow(self.test_loss_vec)
+
+
+    def do_training(self,
+                    slice_len,
+                    batch_size,
+                    epochs,
+                    lr,
+                    samples_per_epoch,
+                    teacher_force_frac,
+                    slice_incr_frequency=None, save_params=None):
         np.random.seed(1)
 
         self.batch_size = batch_size
@@ -156,8 +276,14 @@ class EncoderDecoder(nn.Module):
         optimizer = optim.Adam(self.parameters(), lr=lr)
 
         # For logging the data for plotting
-        train_loss_vec = []
-        val_loss_vec = []
+        self.train_loss_vec = []
+        self.val_loss_vec = []
+        self.test_loss_vec = []
+
+        # Get some initial losses.
+        losses = self.get_intermediate_losses(loss_function, slice_len,
+                                              teacher_force_frac)
+        self.__print_and_log_losses(losses, save_params)
 
         for epoch in range(epochs):
             iterate = 0
@@ -169,29 +295,43 @@ class EncoderDecoder(nn.Module):
                 self.train() # Put the network in training mode.
 
                 # Select a random sample from the data handler.
-                data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                           slice_len)
+                data, forward_targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                                                                           slice_len,
+                                                                           slice_offset=slice_len)
+
+                # this is the data that the backward decoder will reconstruct
+                backward_targets = np.flip(data, axis=2).copy()
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size
                 #   to: sequence_size x batch x num_strains
+
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                targets = add_cuda_to_variable(targets, self.use_gpu)
+                forward_targets = add_cuda_to_variable(forward_targets, self.use_gpu,
+                                                       requires_grad=False)
+                backward_targets = add_cuda_to_variable(backward_targets, self.use_gpu,
+                                                        requires_grad=False)
                 self.zero_grad()
 
                 # Also, we need to clear out the hidden state of the LSTM,
                 # detaching it from its history on the last instance.
                 self.__init_hidden()
 
+                if np.random.rand() < teacher_force_frac:
+                    tf = (forward_targets.transpose(1, 2).transpose(0, 1),
+                          backward_targets.transpose(1, 2).transpose(0, 1))
+                else:
+                    tf = None
                 # Do a forward pass of the model.
-                outputs = self.__forward(data).transpose(0, 1).transpose(1, 2)
+                forward_preds, backward_preds = self.forward(data,
+                                                             teacher_data=tf)
 
                 # For this round set our loss to zero and then compare
                 # accumulated losses for all of the batch examples.
                 # Finally step with the optimizer.
-                loss = 0
-                for bat in range(batch_size):
-                    loss += loss_function(outputs[bat, :], targets[bat, :])
+                floss = loss_function(forward_preds, forward_targets)
+                bloss = loss_function(backward_preds, backward_targets)
+                loss = floss + bloss
                 loss.backward()
                 optimizer.step()
                 iterate += 1
@@ -200,15 +340,13 @@ class EncoderDecoder(nn.Module):
 
             # Get some train and val losses. These can be used for early
             # stopping later on.
-            losses = self.get_intermediate_losses(loss_function, slice_len)
-            train_loss_vec.append(losses[0])
-            val_loss_vec.append(losses[1])
-            print('Train loss: {}'.format(losses[0]))
-            print('  Val loss: {}'.format(losses[1]))
+            losses = self.get_intermediate_losses(loss_function, slice_len,
+                                                  teacher_force_frac)
+            self.__print_and_log_losses(losses, save_params)
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr_frequency is not None or slice_incr_frequency != 0:
+            if slice_incr_frequency is not None or slice_incr_frequency > 0:
                 if epoch != 0 and epoch % slice_incr_frequency == 0:
                     slice_len += 1
                     # Make sure that the slice doesn't get longer than the
@@ -220,14 +358,7 @@ class EncoderDecoder(nn.Module):
             # Save the model and logging information.
             if save_params is not None:
                 torch.save(self.state_dict(), save_params[0])
-                with open(save_params[1], 'w+') as csvfile:
-                    writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-                    writer.writerow(train_loss_vec)
-                    writer.writerow(val_loss_vec)
                 print('Saved model state to: {}'.format(save_params[0]))
-
-        return train_loss_vec, val_loss_vec
-
 
     def daydream(self, primer, predict_len=100, window_size=20,
                  serial=True):
@@ -239,26 +370,36 @@ class EncoderDecoder(nn.Module):
         at a time to the LSTM with no gradient zeroing, or fed as a batch
         and then zeroed everytime. serial=True has been giving better results.
         '''
-        self.batch_size = 1
+        if len(primer.shape) != 3:
+            raise ValueError('Please provide a 3d array of shape: '
+                             '(num_strains, slice_length, batch_size)')
+        self.batch_size = primer.shape[-1]
         self.__init_hidden()
 
         predicted = primer
         # If we do it the serial way, then prime the model with all examples
         # up to the most recent one.
         if serial:
-            inp = add_cuda_to_variable(predicted[:, :-1], self.use_gpu) \
-                .unsqueeze(-1) \
+            inp = add_cuda_to_variable(predicted[:, :-1],
+                                       self.use_gpu,
+                                       requires_grad=False) \
                 .transpose(0, 2) \
                 .transpose(0, 1)[-window_size:, :, :]
-            _ = self.__forward(inp)
+            _ = self.forward(inp)
         for p in range(predict_len):
             if serial:
-                inp = add_cuda_to_variable(predicted[:, -1], self.use_gpu)
+                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
             else:
                 inp = add_cuda_to_variable(predicted, self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
-            output = self.__forward(inp)[-1].transpose(0, 1).data.numpy()
+            if self.use_gpu:
+                output = self.forward(inp)[:, :, -1].transpose(0, 1).data.cpu().numpy()
+            else:
+                output = self.forward(inp)[:, :, -1].transpose(0, 1).data.numpy()
+
+            # Need to reshape the tensor so it can be concatenated.
+            output = np.expand_dims(output, 1)
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
