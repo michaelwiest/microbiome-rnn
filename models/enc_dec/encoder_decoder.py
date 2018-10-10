@@ -153,7 +153,7 @@ class EncoderDecoder(nn.Module):
                 forward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
                 backward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
 
-        return forward_pred.transpose(1, 2).transpose(0, 1), backward_pred.transpose(1, 2).transpose(0, 1)
+        return forward_pred.transpose(1, 2).transpose(0, 2), backward_pred.transpose(1, 2).transpose(0, 2)
 
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
