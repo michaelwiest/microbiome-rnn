@@ -20,7 +20,7 @@ use_convs = True
 
 
 additional_comments = ''
-run_suffix = '_h{}_sl{}_rns{}_sif{}_conv{}{}'.format(hidden_dim,
+run_suffix = '_LSTM_h{}_sl{}_rns{}_sif{}_conv{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
                                               slice_incr_frequency,

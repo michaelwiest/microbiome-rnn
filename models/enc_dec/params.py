@@ -1,4 +1,4 @@
-batch_size = 60
+batch_size = 50
 # Size of the hidden layers of the network.
 hidden_dim = 128
 # How many samples to check before one epoch. Kind of arbitrary.
@@ -18,11 +18,11 @@ slice_incr_frequency = None
 teacher_force_frac = 0.5
 
 additional_comments = ''
-run_suffix = '_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
+run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
                                               slice_incr_frequency,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.csv'.format(run_suffix)
-output_dir = 'rnn_output'
+output_dir = 'enc_dec_output'
