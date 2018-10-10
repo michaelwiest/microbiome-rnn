@@ -157,7 +157,7 @@ class OTUHandler(object):
         # Samples from data based on number of samples. Ie, samples with more
         # data points get more selection.
         all_sizes = [d.shape[1] for d in data_source]
-        probs = [s / sum(all_sizes) for s in all_sizes]
+        probs = [s / (1.0 * sum(all_sizes)) for s in all_sizes]
         which_samples = np.random.choice(len(data_source), N,
                                          p=probs)
 
@@ -184,7 +184,7 @@ class OTUHandler(object):
 
         samples = np.array(samples)
         targets = np.array(targets)
-        
+
         return samples, targets
 
 

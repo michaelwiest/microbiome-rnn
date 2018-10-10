@@ -221,8 +221,8 @@ class EncoderDecoder(nn.Module):
                 forward_preds, backward_preds = self.forward(data,
                                                              teacher_data=tf)
                 # Get the loss associated with this validation data.
-                floss = loss_function(forward_preds, forward_targets)
-                bloss = loss_function(backward_preds, backward_targets)
+                floss = loss_function(forward_preds, forward_targets.transpose(1, 2).transpose(0, 1))
+                bloss = loss_function(backward_preds, backward_targets.transpose(1, 2).transpose(0, 1))
                 loss += floss + bloss
             # Store a normalized loss.
             if self.use_gpu:
