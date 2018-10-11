@@ -360,15 +360,10 @@ class EncoderDecoder(nn.Module):
                 torch.save(self.state_dict(), save_params[0])
                 print('Saved model state to: {}'.format(save_params[0]))
 
-    def daydream(self, primer, predict_len=100, window_size=20,
-                 serial=True):
+    def daydream(self, primer, predict_len=100, window_size=20):
         '''
-        Function for letting the LSTM "dream" up new data. Given a primer it will
-        generate examples for as long as specified.
-
-        The "serial" argument determines wheter or not examples are fed one
-        at a time to the LSTM with no gradient zeroing, or fed as a batch
-        and then zeroed everytime. serial=True has been giving better results.
+        Function for letting the Encoder Decoder "dream" up new data.
+        Given a primer it will generate examples for as long as specified.
         '''
         if len(primer.shape) != 3:
             raise ValueError('Please provide a 3d array of shape: '
@@ -377,20 +372,17 @@ class EncoderDecoder(nn.Module):
         self.__init_hidden()
 
         predicted = primer
-        # If we do it the serial way, then prime the model with all examples
-        # up to the most recent one.
-        if serial:
-            inp = add_cuda_to_variable(predicted[:, :-1],
-                                       self.use_gpu,
-                                       requires_grad=False) \
-                .transpose(0, 2) \
-                .transpose(0, 1)[-window_size:, :, :]
-            _ = self.forward(inp)
+
+        # Prime the model with all the data but the last point.
+        inp = add_cuda_to_variable(predicted[:, :-1],
+                                   self.use_gpu,
+                                   requires_grad=False) \
+            .transpose(0, 2) \
+            .transpose(0, 1)[-window_size:, :, :]
+        _, _ = self.forward(inp)
         for p in range(predict_len):
-            if serial:
-                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
-            else:
-                inp = add_cuda_to_variable(predicted, self.use_gpu)
+
+            inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
             if self.use_gpu:
@@ -402,8 +394,5 @@ class EncoderDecoder(nn.Module):
             output = np.expand_dims(output, 1)
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
-
-            if not serial:
-                self.__init_hidden()
 
         return predicted
