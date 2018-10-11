@@ -133,7 +133,7 @@ class LSTM(nn.Module):
 
                 # Get the loss associated with this validation data.
 
-                loss += loss_function(outputs[bat, :], targets[bat, :])
+                loss += loss_function(outputs, targets)
 
             # Store a normalized loss.
             if self.use_gpu:
@@ -228,7 +228,7 @@ class LSTM(nn.Module):
                 # Finally step with the optimizer.
 
 
-                loss = loss_function(outputs[bat, :], targets[bat, :])
+                loss = loss_function(outputs, targets)
                 loss.backward()
                 optimizer.step()
                 iterate += 1
