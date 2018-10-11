@@ -14,6 +14,9 @@ reduced_num_strains = 80
 # amount after every epoch. Only used for RNN.
 slice_incr_amt = 1
 
+# Use conv
+use_convs = True
+
 
 additional_comments = ''
 run_suffix = '_h{}_sl{}_rns{}_sia{}{}'.format(hidden_dim,

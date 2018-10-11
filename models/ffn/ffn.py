@@ -10,17 +10,16 @@ import random
 import numpy as np
 import sys
 import os
+# from conv_ffn import ConvFFN
 sys.path.insert(1, os.path.join(sys.path[0], '../..'))
 from helpers.model_helper import *
 import csv
 
 class FFN(nn.Module):
     def __init__(self, hidden_dim, bs, otu_handler, slice_len,
-                 kernel_size=3,
                  use_gpu=False):
         super(FFN, self).__init__()
         self.hidden_dim = hidden_dim
-        self.kernel_size = kernel_size
         self.otu_handler = otu_handler
         self.slice_len = slice_len
         self.batch_size = bs
@@ -31,12 +30,11 @@ class FFN(nn.Module):
                                      self.otu_handler.num_strains)
 
     def forward(self, input_data):
-        print(input_data.size())
         # input_data is shape: sequence_size x batch x num_strains
         # after_conv = self.conv_layers(input_data.transpose(1, 2))
-        print(after_conv.size())
-        after_linear = self.linear_layers(after_conv.transpose(1, 2).transpose(1, 0))
-        return self.final_layer(after_linear.view(self.batch_size, -1))
+        after_linear = self.linear_layers(input_data)
+        final = self.final_layer(after_linear.view(self.batch_size, -1))
+        return final
 
 
 
@@ -45,38 +43,19 @@ class FFN(nn.Module):
     daydreaming. so need to set it like this.
     '''
     def __set_layers(self):
-        self.conv_layers = nn.Sequential(
-            nn.Conv1d(self.otu_handler.num_strains,
-                      64,
-                      self.kernel_size, padding=1)
-            , nn.ReLU()
-            , nn.Conv1d(64,
-                        64 * 2,
-                        self.kernel_size, padding=1)
-            , nn.ReLU()
-            , nn.Conv1d(64 * 2,
-                        64 * 4,
-                        self.kernel_size, padding=1)
-            , nn.ReLU()
-            , nn.Conv1d(64 * 4,
-                        self.otu_handler.num_strains,
-                        1)
-            , nn.ReLU()
-            # , nn.MaxPool1d(2, 2)
-        )
         self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
             # nn.Dropout(0.5),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.BatchNorm1d(self.batch_size),
+            # nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.BatchNorm1d(self.batch_size),
+            # nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.BatchNorm1d(self.batch_size),
+            # nn.BatchNorm1d(self.batch_size),
             nn.ReLU(),
             # nn.Dropout(0.5)
             )
@@ -99,16 +78,20 @@ class FFN(nn.Module):
         for which_sample in samples:
             loss = 0
             for b in range(num_batches):
+                is_conv_ffn = type(self).__name__ == 'ConvFFN'
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                            self.slice_len,
-                                                                           which_data=which_sample)
+                                                                           which_data=which_sample,
+                                                                           target_slice=is_conv_ffn)
                 data = add_cuda_to_variable(data, self.use_gpu,
                                             requires_grad=False).transpose(1, 2).transpose(0, 1)
                 targets = add_cuda_to_variable(targets, self.use_gpu,
                                                requires_grad=False)
 
                 outputs = self.forward(data)
-
+                if is_conv_ffn:
+                    output_len = outputs.size(2)
+                    targets = targets[:, :, -output_len:]
                 # Get the loss associated with this validation data.
 
                 loss += loss_function(outputs, targets)
@@ -177,25 +160,29 @@ class FFN(nn.Module):
             for iterate in range(int(samples_per_epoch / self.batch_size)):
                 self.train()
                 # Select a random sample from the data handler.
+                is_conv_ffn = type(self).__name__ == 'ConvFFN'
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                            self.slice_len,
-                                                                           target_slice=False)
+                                                                           target_slice=is_conv_ffn)
 
                 # Transpose
                 #   from: batch x num_strains x sequence_size
                 #   to: sequence_size x batch x num_strains
                 data = add_cuda_to_variable(data, self.use_gpu).transpose(1, 2).transpose(0, 1)
-                targets = add_cuda_to_variable(targets, self.use_gpu)
+                targets = add_cuda_to_variable(targets, self.use_gpu, requires_grad=False)
                 self.zero_grad()
 
                 # Do a forward pass of the model.
-                outputs = self.__forward(data)
+                outputs = self.forward(data)
+                if is_conv_ffn:
+                    output_len = outputs.size(2)
+                    targets = targets[:, :, -output_len:]
 
                 # For this round set our loss to zero and then compare
                 # accumulate losses for all of the batch examples.
                 # Finally step with the optimizer.
 
-                loss = loss_function(outputs[bat, :], targets[bat, :])
+                loss = loss_function(outputs, targets)
                 loss.backward()
                 optimizer.step()
 
