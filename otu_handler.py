@@ -156,20 +156,18 @@ class OTUHandler(object):
 
         # Samples from data based on number of samples. Ie, samples with more
         # data points get more selection.
-        rands = np.random.rand(N)
-        all_sum = np.sum([df.shape[1] for df in data_source])
-        bins = np.cumsum([df.shape[1] / all_sum for df in data_source])
-        which_samples = np.argmin(np.abs([bins - rand for rand in rands]),
-                                  axis=1)
-        # print(which_data)
-        # print(which_samples)
+        all_sizes = [d.shape[1] for d in data_source]
+        probs = [s / (1.0 * sum(all_sizes)) for s in all_sizes]
+        which_samples = np.random.choice(len(data_source), N,
+                                         p=probs)
+
         # Pick a random sample and whether or not it is training or validation.
         for ws in which_samples:
             sample = data_source[ws]
-            # print(ws)
+
             # Pick a random starting point in the example. Get the data in
             # that slice and then the values immediately after.
-            start_index = np.random.randint(sample.shape[1] - slice_size)
+            start_index = np.random.randint(sample.shape[1] - slice_size - slice_offset)
             data = sample.iloc[:, start_index: start_index + slice_size].values
 
             # For the LSTM we want a whole slice of values to compare against.
@@ -186,6 +184,7 @@ class OTUHandler(object):
 
         samples = np.array(samples)
         targets = np.array(targets)
+
         return samples, targets
 
 
