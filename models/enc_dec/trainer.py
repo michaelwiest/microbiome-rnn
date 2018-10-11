@@ -51,7 +51,7 @@ rnn = EncoderDecoder(hidden_dim, otu_handler, use_gpu,
                      LSTM_in_size=reduced_num_strains)
 
 
-train_loss, val_loss = rnn.do_training(seq_len, batch_size,
+rnn.do_training(seq_len, batch_size,
                                        num_epochs,
                                        learning_rate,
                                        samples_per_epoch,
