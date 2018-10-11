@@ -132,16 +132,16 @@ class LSTM(nn.Module):
                 targets = targets[:, :, -output_len:]
 
                 # Get the loss associated with this validation data.
-                for bat in range(self.batch_size):
-                    loss += loss_function(outputs[bat, :], targets[bat, :])
+
+                loss += loss_function(outputs[bat, :], targets[bat, :])
 
             # Store a normalized loss.
             if self.use_gpu:
                 scores_to_return.append(loss.data.cpu().numpy().item()
-                                        / (self.batch_size * num_batches))
+                                        / (num_batches))
             else:
                 scores_to_return.append(loss.data.numpy().item()
-                                        / (self.batch_size * num_batches))
+                                        / (num_batches))
         return scores_to_return
 
     def __print_and_log_losses(self, new_losses, save_params):
@@ -226,9 +226,9 @@ class LSTM(nn.Module):
                 # For this round set our loss to zero and then compare
                 # accumulated losses for all of the batch examples.
                 # Finally step with the optimizer.
-                loss = 0
-                for bat in range(batch_size):
-                    loss += loss_function(outputs[bat, :], targets[bat, :])
+
+
+                loss = loss_function(outputs[bat, :], targets[bat, :])
                 loss.backward()
                 optimizer.step()
                 iterate += 1
