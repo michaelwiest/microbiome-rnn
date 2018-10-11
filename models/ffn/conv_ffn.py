@@ -10,75 +10,83 @@ import random
 import numpy as np
 import sys
 import os
-from lstm import LSTM
+from ffn import FFN
 sys.path.insert(1, os.path.join(sys.path[0], '../..'))
 from helpers.model_helper import *
 import csv
 
 
 
-class ConvLSTM(LSTM):
+class ConvFFN(FFN):
     '''
     This subclass inherits from the LSTM class and
     adds 1d convolution over the input time.
     '''
-    def __init__(self, hidden_dim, otu_handler,
-                 use_gpu=False,
-                 LSTM_in_size=None):
-        super(ConvLSTM, self).__init__(hidden_dim, otu_handler,
-                                   use_gpu=use_gpu,
-                                   LSTM_in_size=LSTM_in_size)
-
+    def __init__(self, hidden_dim, bs, otu_handler, slice_len,
+                 use_gpu=False):
+        super(ConvFFN, self).__init__(hidden_dim, bs, otu_handler,
+                                      slice_len,
+                                      use_gpu=use_gpu)
         self.conv_element = nn.Sequential(
-            nn.Conv1d(self.otu_handler.num_strains, 256,
+            nn.Conv1d(self.otu_handler.num_strains, hidden_dim,
                       kernel_size=4, stride=2, padding=3),
             nn.ReLU(),
-            nn.Conv1d(256, 256,
+            nn.Conv1d(self.hidden_dim, self.hidden_dim,
                       kernel_size=2, stride=1, padding=1),
 
             nn.ReLU(),
-            nn.Conv1d(256, 256,
+            nn.Conv1d(self.hidden_dim, self.hidden_dim,
                       kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv1d(256, 256,
+            nn.Conv1d(self.hidden_dim, self.hidden_dim,
                       kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv1d(256, 256,
+            nn.Conv1d(self.hidden_dim, self.hidden_dim,
                       kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv1d(256, LSTM_in_size,
+            nn.Conv1d(self.hidden_dim, self.hidden_dim,
                       kernel_size=1, stride=1, padding=0),
             nn.ReLU(),
         )
 
+        self.time_transformer = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU()
+        )
+
         self.deconv_element = nn.Sequential(
-            nn.ConvTranspose1d(self.hidden_dim, 256, kernel_size=1, stride=1, padding=0),
+            nn.ConvTranspose1d(self.hidden_dim, self.hidden_dim, kernel_size=1, stride=1, padding=0),
             nn.ReLU(),
-            nn.ConvTranspose1d(256, 256,
+            nn.ConvTranspose1d(self.hidden_dim, self.hidden_dim,
                                kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose1d(256, 256,
+            nn.ConvTranspose1d(self.hidden_dim, self.hidden_dim,
                                kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose1d(256, 256,
+            nn.ConvTranspose1d(self.hidden_dim, self.hidden_dim,
                                kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose1d(256, 256,
+            nn.ConvTranspose1d(self.hidden_dim, self.hidden_dim,
                                kernel_size=2, stride=1, padding=1),
             nn.ReLU(),
-            nn.ConvTranspose1d(256, self.otu_handler.num_strains,
+            nn.ConvTranspose1d(self.hidden_dim, self.otu_handler.num_strains,
                                kernel_size=4, stride=2, padding=3),
             nn.ReLU()
         )
-        self.lin_final = nn.Linear(self.otu_handler.num_strains,
-                                   self.otu_handler.num_strains)
+        # self.lin_final = nn.Linear(self.otu_handler.num_strains,
+        #                            self.otu_handler.num_strains)
 
     def forward(self, data):
         # data is shape: sequence_size x batch x num_strains
-        data = data.transpose(0,1).transpose(1, 2)
+        data = data.transpose(0, 1).transpose(1, 2)
+        # print(data.size())
         data = self.conv_element(data)
+        # print(data.size())
         data = data.transpose(0, 2).transpose(1, 2)
-        data, self.hidden = self.lstm(data, self.hidden)
+        data = self.time_transformer(data)
+        # print(data.size())
         data = self.deconv_element(data.transpose(0,1).transpose(1,2))
-        data = self.lin_final(data.transpose(0,1).transpose(0, 2))
-        return data.transpose(0,1).transpose(1, 2)
+        # print(data.size())
+        return data
