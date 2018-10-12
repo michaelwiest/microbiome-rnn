@@ -47,9 +47,9 @@ save_params = (os.path.join(output_dir, model_name),
 
 if use_convs:
     print('Using Conv Net')
-    ffn = ConvFFN(hidden_dim, batch_size, otu_handler, seq_len, use_gpu=use_gpu)
+    ffn = ConvFFN(hidden_dim, otu_handler, seq_len, use_gpu=use_gpu)
 else:
-    ffn = FFN(hidden_dim, batch_size, otu_handler, seq_len, use_gpu=use_gpu)
+    ffn = FFN(hidden_dim, otu_handler, seq_len, use_gpu=use_gpu)
 
 ffn.do_training(batch_size, num_epochs, learning_rate,
                                        samples_per_epoch, save_params=save_params)

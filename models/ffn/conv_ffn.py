@@ -22,9 +22,9 @@ class ConvFFN(FFN):
     This subclass inherits from the LSTM class and
     adds 1d convolution over the input time.
     '''
-    def __init__(self, hidden_dim, bs, otu_handler, slice_len,
+    def __init__(self, hidden_dim, otu_handler, slice_len,
                  use_gpu=False):
-        super(ConvFFN, self).__init__(hidden_dim, bs, otu_handler,
+        super(ConvFFN, self).__init__(hidden_dim, otu_handler,
                                       slice_len,
                                       use_gpu=use_gpu)
         self.conv_element = nn.Sequential(

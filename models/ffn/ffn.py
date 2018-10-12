@@ -10,55 +10,40 @@ import random
 import numpy as np
 import sys
 import os
-# from conv_ffn import ConvFFN
 sys.path.insert(1, os.path.join(sys.path[0], '../..'))
 from helpers.model_helper import *
 import csv
 
 class FFN(nn.Module):
-    def __init__(self, hidden_dim, bs, otu_handler, slice_len,
+    def __init__(self, hidden_dim, otu_handler, slice_len,
                  use_gpu=False):
         super(FFN, self).__init__()
         self.hidden_dim = hidden_dim
         self.otu_handler = otu_handler
         self.slice_len = slice_len
-        self.batch_size = bs
         self.use_gpu = use_gpu
-        self.__set_layers()
+
+        self.linear_layers = nn.Sequential(
+            nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+            )
+
         self.final_layer = nn.Linear(self.hidden_dim *
                                      int(self.slice_len),
                                      self.otu_handler.num_strains)
 
     def forward(self, input_data):
         # input_data is shape: sequence_size x batch x num_strains
-        # after_conv = self.conv_layers(input_data.transpose(1, 2))
         after_linear = self.linear_layers(input_data)
         final = self.final_layer(after_linear.view(self.batch_size, -1))
         return final
 
-
-
-    '''
-    Batch norm depends on the batch size which can be changed when doing
-    daydreaming. so need to set it like this.
-    '''
-    def __set_layers(self):
-        self.linear_layers = nn.Sequential(
-            nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
-            nn.BatchNorm1d(self.batch_size),
-            nn.ReLU(),
-            # nn.Dropout(0.5),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.batch_size),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.batch_size),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.batch_size),
-            nn.ReLU(),
-            # nn.Dropout(0.5)
-            )
 
     def get_intermediate_losses(self, loss_function,
                                 num_batches=10):
@@ -213,8 +198,6 @@ class FFN(nn.Module):
     '''
     def daydream(self, primer, predict_len=100):
         self.batch_size = 1
-        # self.__set_layers()
-        # self.eval()
 
         predicted = primer
         for p in range(predict_len):
