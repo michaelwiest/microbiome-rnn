@@ -385,10 +385,12 @@ class EncoderDecoder(nn.Module):
             inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
+            output, _ = self.forward(inp)
+            output = output[:, :, -1].transpose(0, 1).data
             if self.use_gpu:
-                output, _ = self.forward(inp)[:, :, -1].transpose(0, 1).data.cpu().numpy()
+                output = output.cpu().numpy()
             else:
-                output, _ = self.forward(inp)[:, :, -1].transpose(0, 1).data.numpy()
+                output = output.numpy()
 
             # Need to reshape the tensor so it can be concatenated.
             output = np.expand_dims(output, 1)
