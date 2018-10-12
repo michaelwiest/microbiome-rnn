@@ -16,10 +16,9 @@ use_convs = True
 
 
 additional_comments = ''
-run_suffix = '_ffn_h{}_sl{}_rns{}_sia{}_conv{}{}'.format(hidden_dim,
+run_suffix = '_ffn_h{}_sl{}_rns{}_conv{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
-                                              slice_incr_amt,
                                               use_convs,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
