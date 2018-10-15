@@ -271,6 +271,7 @@ class LSTM(nn.Module):
                              '(num_strains, slice_length, batch_size)')
         self.batch_size = primer.shape[-1]
         self.__init_hidden()
+        self.eval()
 
         predicted = primer
         # If we do it the serial way, then prime the model with all examples
