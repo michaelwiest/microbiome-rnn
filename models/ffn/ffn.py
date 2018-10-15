@@ -201,8 +201,8 @@ class FFN(nn.Module):
 
         predicted = primer
         for p in range(predict_len):
-            inp = add_cuda_to_variable(predicted[:, -self.slice_len:], self.use_gpu)
-            inp = inp.unsqueeze(-1).transpose(0, 2).transpose(0, 1)
+            inp = add_cuda_to_variable(predicted[:, -self.slice_len:, :], self.use_gpu)
+            inp = inp.transpose(0, 2).transpose(0, 1)
             output = self.__forward(inp).transpose(0, 1).data.numpy()
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
