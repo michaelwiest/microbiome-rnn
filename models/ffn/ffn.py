@@ -203,7 +203,7 @@ class FFN(nn.Module):
         for p in range(predict_len):
             inp = add_cuda_to_variable(predicted[:, -self.slice_len:, :], self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)
-            output = self.forward(inp).transpose(0, 1)
+            output = self.forward(inp).transpose(0, 1).transpose(1, 2)
             if self.use_gpu:
                 output = output.data.cpu().numpy()
             else:
