@@ -208,6 +208,7 @@ class FFN(nn.Module):
                 output = output.data.cpu().numpy()
             else:
                 output = output.data.numpy()
+            output = np.expand_dims(output[:, -1, :], 1)
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
