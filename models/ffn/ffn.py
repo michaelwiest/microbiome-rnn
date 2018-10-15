@@ -197,7 +197,7 @@ class FFN(nn.Module):
     generate examples for as long as specified.
     '''
     def daydream(self, primer, predict_len=100):
-        self.batch_size = 1
+        self.batch_size = primer.shape[2]
 
         predicted = primer
         for p in range(predict_len):
