@@ -44,59 +44,59 @@ class EncoderDecoder(nn.Module):
             nn.Linear(self.otu_handler.num_strains, hidden_dim),
             # nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, LSTM_in_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
-            nn.Tanh()
+            nn.ReLU()
         )
         self.between_encoder_decoder = nn.Sequential(
             nn.Linear(LSTM_in_size, hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_dim, LSTM_in_size),
-            nn.Tanh()
+            nn.ReLU()
             )
 
         # Expansion layers from reduced number to raw number of strains
         self.after_lstm_forward = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, self.otu_handler.num_strains),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
-            # nn.Tanh()
+            # nn.ReLU()
         )
         self.after_lstm_backward = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, self.otu_handler.num_strains),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
