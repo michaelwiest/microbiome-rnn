@@ -199,12 +199,15 @@ class FFN(nn.Module):
     def daydream(self, primer, predict_len=100):
         self.batch_size = primer.shape[-1]
         self.eval()
+        is_conv_ffn = type(self).__name__ == 'ConvFFN'
 
         predicted = primer
         for p in range(predict_len):
             inp = add_cuda_to_variable(predicted[:, -self.slice_len:, :], self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)
-            output = self.forward(inp).transpose(0, 1).transpose(1, 2)
+            output = self.forward(inp)
+            if is_conv_ffn:
+                output = output.transpose(0, 1).transpose(1, 2)
             if self.use_gpu:
                 output = output.data.cpu().numpy()
             else:
