@@ -370,6 +370,7 @@ class EncoderDecoder(nn.Module):
                              '(num_strains, slice_length, batch_size)')
         self.batch_size = primer.shape[-1]
         self.__init_hidden()
+        self.eval()
 
         predicted = primer
 
