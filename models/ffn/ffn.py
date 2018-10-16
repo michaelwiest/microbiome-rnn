@@ -208,11 +208,17 @@ class FFN(nn.Module):
             output = self.forward(inp)
             if is_conv_ffn:
                 output = output.transpose(0, 1).transpose(1, 2)
+            else:
+                output = output.transpose(0, 1)
             if self.use_gpu:
                 output = output.data.cpu().numpy()
             else:
                 output = output.data.numpy()
-            output = np.expand_dims(output[:, -1, :], 1)
+            if is_conv_ffn:
+                output = np.expand_dims(output[:, -1, :], 1)
+            else:
+                output = np.expand_dims(output, 1)
+
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
 
