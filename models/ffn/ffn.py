@@ -26,11 +26,11 @@ class FFN(nn.Module):
         self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim * 2),
             nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.Linear(self.hidden_dim * 2, self.hidden_dim * 4),
             nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.Linear(self.hidden_dim * 4, self.hidden_dim),
             nn.ReLU(),
             )
 
