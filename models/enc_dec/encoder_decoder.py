@@ -34,9 +34,9 @@ class EncoderDecoder(nn.Module):
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
 
-        self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, 1)
+        self.encoder = nn.GRU(LSTM_in_size, hidden_dim, 1)
+        self.decoder_forward = nn.GRU(LSTM_in_size, hidden_dim, 1)
+        self.decoder_backward = nn.GRU(LSTM_in_size, hidden_dim, 1)
 
 
         # Compression layers from raw number of inputs to reduced number
@@ -160,18 +160,11 @@ class EncoderDecoder(nn.Module):
         if self.use_gpu:
             self.hidden = (Variable(torch.zeros(1,
                                                 self.batch_size,
-                                                self.hidden_dim).cuda()),
-                           Variable(torch.zeros(1,
-                                                self.batch_size,
                                                 self.hidden_dim).cuda()))
         else:
             self.hidden = (Variable(torch.zeros(1,
                                                 self.batch_size,
-                                                self.hidden_dim)),
-                           Variable(torch.zeros(1,
-                                                self.batch_size,
-                                                self.hidden_dim))
-                           )
+                                                self.hidden_dim)))
     def get_intermediate_losses(self, loss_function, slice_len,
                                 teacher_force_frac,
                                 num_batches=10):
