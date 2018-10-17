@@ -7,7 +7,7 @@ output_dir = sys.argv[2]
 window_size = int(sys.argv[3])
 
 input_files = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
-csvs = [pd.read_csv(f) for f in input_files]
+csvs = [pd.read_csv(f, index_col=0) for f in input_files]
 
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
