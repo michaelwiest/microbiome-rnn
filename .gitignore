@@ -1,6 +1,7 @@
 # Project specific
 ffn_output/*
 rnn_output/*
+enc_dec_output/*
 logs/*
 from_qiita/*
 from_qiita2/*

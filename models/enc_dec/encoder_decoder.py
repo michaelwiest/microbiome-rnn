@@ -34,39 +34,37 @@ class EncoderDecoder(nn.Module):
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
 
-        self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, 1)
-        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, 1)
+        self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, 2)
+        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, 2)
+        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, 2)
 
 
         # Compression layers from raw number of inputs to reduced number
         self.strain_compressor = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, hidden_dim),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, LSTM_in_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             nn.ReLU()
         )
-        self.between_encoder_decoder = nn.Sequential(
-            nn.Linear(LSTM_in_size, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, LSTM_in_size),
-            nn.ReLU()
-            )
 
         # Expansion layers from reduced number to raw number of strains
         self.after_lstm_forward = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
@@ -84,6 +82,8 @@ class EncoderDecoder(nn.Module):
         self.after_lstm_backward = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
@@ -117,6 +117,7 @@ class EncoderDecoder(nn.Module):
 
         d = self.strain_compressor(input_data)
         _, self.hidden = self.encoder(d, self.hidden)
+
 
         forward_hidden = self.hidden
         backward_hidden = self.hidden
@@ -158,17 +159,17 @@ class EncoderDecoder(nn.Module):
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
         if self.use_gpu:
-            self.hidden = (Variable(torch.zeros(1,
+            self.hidden = (Variable(torch.zeros(2,
                                                 self.batch_size,
                                                 self.hidden_dim).cuda()),
-                           Variable(torch.zeros(1,
+                           Variable(torch.zeros(2,
                                                 self.batch_size,
                                                 self.hidden_dim).cuda()))
         else:
-            self.hidden = (Variable(torch.zeros(1,
+            self.hidden = (Variable(torch.zeros(2,
                                                 self.batch_size,
                                                 self.hidden_dim)),
-                           Variable(torch.zeros(1,
+                           Variable(torch.zeros(2,
                                                 self.batch_size,
                                                 self.hidden_dim))
                            )
