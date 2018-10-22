@@ -2,7 +2,7 @@ batch_size = 50
 # Size of the hidden layers of the network.
 hidden_dim = 128
 # How many samples to check before one epoch. Kind of arbitrary.
-samples_per_epoch = 5
+samples_per_epoch = 500000
 num_epochs = 50
 learning_rate = 0.0000005
 # Length of the sequence being passed to the LSTM or FFN.
