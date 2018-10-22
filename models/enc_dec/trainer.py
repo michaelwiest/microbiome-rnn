@@ -47,7 +47,10 @@ save_params = (os.path.join(output_dir, model_name),
                os.path.join(output_dir, log_name))
 
 
-rnn = EncoderDecoder(hidden_dim, otu_handler, use_gpu,
+rnn = EncoderDecoder(hidden_dim,
+                     otu_handler,
+                     num_lstms,
+                     use_gpu,
                      LSTM_in_size=reduced_num_strains)
 
 
