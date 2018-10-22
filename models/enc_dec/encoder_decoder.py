@@ -26,6 +26,7 @@ class EncoderDecoder(nn.Module):
     seeded example.
     '''
     def __init__(self, hidden_dim, otu_handler,
+                 num_lstms,
                  use_gpu=False,
                  LSTM_in_size=None):
         super(EncoderDecoder, self).__init__()
@@ -33,10 +34,10 @@ class EncoderDecoder(nn.Module):
         self.otu_handler = otu_handler
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
-
-        self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, 2)
-        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, 2)
-        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, 2)
+        self.num_lstms = num_lstms
+        self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, self.num_lstms)
+        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, self.num_lstms)
+        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, self.num_lstms)
 
 
         # Compression layers from raw number of inputs to reduced number
@@ -159,17 +160,17 @@ class EncoderDecoder(nn.Module):
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
         if self.use_gpu:
-            self.hidden = (Variable(torch.zeros(2,
+            self.hidden = (Variable(torch.zeros(self.num_lstms,
                                                 self.batch_size,
                                                 self.hidden_dim).cuda()),
-                           Variable(torch.zeros(2,
+                           Variable(torch.zeros(self.num_lstms,
                                                 self.batch_size,
                                                 self.hidden_dim).cuda()))
         else:
-            self.hidden = (Variable(torch.zeros(2,
+            self.hidden = (Variable(torch.zeros(self.num_lstms,
                                                 self.batch_size,
                                                 self.hidden_dim)),
-                           Variable(torch.zeros(2,
+                           Variable(torch.zeros(self.num_lstms,
                                                 self.batch_size,
                                                 self.hidden_dim))
                            )

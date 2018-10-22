@@ -17,6 +17,9 @@ slice_incr_frequency = None
 # What percentage of the time to use teacher forcing during training
 teacher_force_frac = 0.5
 
+# How many stacked LSTMs to use?
+num_lstms = 2
+
 additional_comments = ''
 run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
                                               seq_len,
