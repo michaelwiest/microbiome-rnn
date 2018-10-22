@@ -225,11 +225,12 @@ class EncoderDecoder(nn.Module):
                                                              teacher_data=tf)
 
                 # We want to get the loss on a per-strain basis.
+
                 if self.use_gpu:
-                    forward_preds = forward_preds.detach().cpu().numpy()
-                    backward_preds = backward_preds.detach().cpu().numpy()
-                    forward_targets = forward_targets.detach().cpu().numpy()
-                    backward_targets = backward_targets.detach().cpu().numpy()
+                    forward_preds = forward_preds.detach().cpu()
+                    backward_preds = backward_preds.detach().cpu()
+                    forward_targets = forward_targets.detach().cpu()
+                    backward_targets = backward_targets.detach().cpu()
                 for strain in range(self.otu_handler.num_strains):
                     # Get the loss associated with this validation data.
                     strain_losses[i, strain] += loss_function(forward_preds[:, strain, :],
