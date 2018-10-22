@@ -225,7 +225,11 @@ class EncoderDecoder(nn.Module):
                                                              teacher_data=tf)
 
                 # We want to get the loss on a per-strain basis.
-
+                if self.use_gpu:
+                    forward_preds = forward_preds.detach().numpy()
+                    backward_preds = backward_preds.detach().numpy()
+                    forward_targets = forward_targets.detach().numpy()
+                    backward_targets = backward_targets.detach().numpy()
                 for strain in range(forward_preds.size(1)):
                     # Get the loss associated with this validation data.
                     strain_losses[i, strain] += loss_function(forward_preds[:, strain, :],
@@ -241,7 +245,7 @@ class EncoderDecoder(nn.Module):
                                ):
         '''
         This function joins the newest loss values to the ongoing tensor.
-        It also prints out the data in a readable fashion. 
+        It also prints out the data in a readable fashion.
         '''
         if instantiate:
             self.loss_tensor = np.expand_dims(new_losses, axis=-1)
