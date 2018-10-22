@@ -182,21 +182,22 @@ class EncoderDecoder(nn.Module):
         '''
         self.eval()
 
-        scores_to_return = []
-
         # First get some training loss and then a validation loss.
         if self.otu_handler.test_data is not None:
             samples = ['train', 'validation', 'test']
         else:
             samples = ['train', 'validation']
 
-        for which_sample in samples:
-            loss = 0
+        strain_losses = np.zeros((len(samples), self.otu_handler.num_strains))
+
+        for i, which_sample in enumerate(samples):
+
             for b in range(num_batches):
                 # Select a random sample from the data handler.
                 data, forward_targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                           slice_len,
-                                                                           slice_offset=slice_len)
+                                                                                   slice_len,
+                                                                                   slice_offset=slice_len,
+                                                                                   which_data=which_sample)
                 # this is the data that the backward decoder will reconstruct
                 backward_targets = np.flip(data, axis=2).copy()
                 # Transpose
@@ -222,39 +223,41 @@ class EncoderDecoder(nn.Module):
                 # Do a forward pass of the model.
                 forward_preds, backward_preds = self.forward(data,
                                                              teacher_data=tf)
-                # Get the loss associated with this validation data.
-                floss = loss_function(forward_preds, forward_targets)
-                bloss = loss_function(backward_preds, backward_targets)
-                loss += floss + bloss
-            # Store a normalized loss.
-            if self.use_gpu:
-                scores_to_return.append(loss.data.cpu().numpy().item()
-                                        / (2 * num_batches))
-            else:
-                scores_to_return.append(loss.data.numpy().item()
-                                        / (2 * num_batches))
-        return scores_to_return
 
-    def __print_and_log_losses(self, new_losses, save_params):
-        train_l = new_losses[0]
-        val_l = new_losses[1]
-        self.train_loss_vec.append(train_l)
-        self.val_loss_vec.append(val_l)
-        print('Train loss: {}'.format(train_l))
-        print('  Val loss: {}'.format(val_l))
+                # We want to get the loss on a per-strain basis.
 
-        if len(new_losses) == 3:
-            test_l = new_losses[2]
-            self.test_loss_vec.append(test_l)
-            print(' Test loss: {}'.format(test_l))
+                for strain in range(forward_preds.size(1)):
+                    # Get the loss associated with this validation data.
+                    strain_losses[i, strain] += loss_function(forward_preds[:, strain, :],
+                                                              forward_targets[:, strain, :])
+                    strain_losses[i, strain] += loss_function(backward_preds[:, strain, :],
+                                                              backward_targets[:, strain, :])
+
+        strain_losses /= (2 * num_batches * self.otu_handler.num_strains)
+        return strain_losses
+
+    def __print_and_log_losses(self, new_losses, save_params,
+                               instantiate=False # Overwrite tensor if first time.
+                               ):
+        '''
+        This function joins the newest loss values to the ongoing tensor.
+        It also prints out the data in a readable fashion. 
+        '''
+        if instantiate:
+            self.loss_tensor = np.expand_dims(new_losses, axis=-1)
+        else:
+            new_losses = np.expand_dims(new_losses, axis=-1)
+            self.loss_tensor = np.concatenate((self.loss_tensor, new_losses),
+                                              axis=-1)
+
+        to_print = self.loss_tensor[:, :, -1].sum(axis=1).tolist()
+        print_str = ['Train loss: {}', '  Val loss: {}',
+                     ' Test loss: {}']
+        for i, tp in enumerate(to_print):
+            print(print_str[i].format(tp))
 
         if save_params is not None:
-            with open(save_params[1], 'w+') as csvfile:
-                writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(self.train_loss_vec)
-                writer.writerow(self.val_loss_vec)
-                if len(new_losses) == 3:
-                    writer.writerow(self.test_loss_vec)
+            np.save(save_params[1], self.loss_tensor)
 
 
     def do_training(self,
@@ -278,14 +281,14 @@ class EncoderDecoder(nn.Module):
         optimizer = optim.Adam(self.parameters(), lr=lr)
 
         # For logging the data for plotting
-        self.train_loss_vec = []
-        self.val_loss_vec = []
-        self.test_loss_vec = []
+
 
         # Get some initial losses.
         losses = self.get_intermediate_losses(loss_function, slice_len,
                                               teacher_force_frac)
-        self.__print_and_log_losses(losses, save_params)
+
+        self.loss_tensor = None
+        self.__print_and_log_losses(losses, save_params, instantiate=True)
 
         for epoch in range(epochs):
             iterate = 0
@@ -348,14 +351,15 @@ class EncoderDecoder(nn.Module):
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr_frequency is not None or slice_incr_frequency > 0:
-                if epoch != 0 and epoch % slice_incr_frequency == 0:
-                    slice_len += 1
-                    # Make sure that the slice doesn't get longer than the
-                    # amount of data we can feed to it. Could handle this with
-                    # padding characters.
-                    slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
-                    print('Increased slice length to: {}'.format(slice_len))
+            if slice_incr_frequency is not None:
+                if slice_incr_frequency > 0:
+                    if epoch != 0 and epoch % slice_incr_frequency == 0:
+                        slice_len += 1
+                        # Make sure that the slice doesn't get longer than the
+                        # amount of data we can feed to it. Could handle this with
+                        # padding characters.
+                        slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
+                        print('Increased slice length to: {}'.format(slice_len))
 
             # Save the model and logging information.
             if save_params is not None:

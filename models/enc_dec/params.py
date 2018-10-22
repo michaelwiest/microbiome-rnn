@@ -2,7 +2,7 @@ batch_size = 50
 # Size of the hidden layers of the network.
 hidden_dim = 128
 # How many samples to check before one epoch. Kind of arbitrary.
-samples_per_epoch = 500000
+samples_per_epoch = 5
 num_epochs = 50
 learning_rate = 0.0000005
 # Length of the sequence being passed to the LSTM or FFN.
@@ -27,5 +27,5 @@ run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
                                               slice_incr_frequency,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
-log_name = 'log{}.csv'.format(run_suffix)
+log_name = 'log{}.npy'.format(run_suffix)
 output_dir = 'enc_dec_output'
