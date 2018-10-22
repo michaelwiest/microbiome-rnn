@@ -226,11 +226,11 @@ class EncoderDecoder(nn.Module):
 
                 # We want to get the loss on a per-strain basis.
                 if self.use_gpu:
-                    forward_preds = forward_preds.detach().numpy()
-                    backward_preds = backward_preds.detach().numpy()
-                    forward_targets = forward_targets.detach().numpy()
-                    backward_targets = backward_targets.detach().numpy()
-                for strain in range(forward_preds.size(1)):
+                    forward_preds = forward_preds.detach().cpu().numpy()
+                    backward_preds = backward_preds.detach().cpu().numpy()
+                    forward_targets = forward_targets.detach().cpu().numpy()
+                    backward_targets = backward_targets.detach().cpu().numpy()
+                for strain in range(self.otu_handler.num_strains):
                     # Get the loss associated with this validation data.
                     strain_losses[i, strain] += loss_function(forward_preds[:, strain, :],
                                                               forward_targets[:, strain, :])
