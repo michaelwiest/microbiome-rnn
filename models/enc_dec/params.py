@@ -21,10 +21,11 @@ teacher_force_frac = 0.5
 num_lstms = 2
 
 additional_comments = ''
-run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}{}'.format(hidden_dim,
+run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
                                               slice_incr_frequency,
+                                              num_lstms,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.npy'.format(run_suffix)
