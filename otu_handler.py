@@ -39,15 +39,19 @@ class OTUHandler(object):
         self.train_data = []
         self.val_data = []
         temp_sizes = []
-        for sample in self.samples:
+        for i, sample in enumerate(self.samples):
             index = int(percent * sample.shape[1])
             # If not enough examples, skip this file.
-            if not (len(sample.iloc[:, :index]) < minsize or
-                    len(sample.iloc[:, index:]) < minsize):
+            if not ((sample.iloc[:, :index].shape[1]) < minsize or
+                    (sample.iloc[:, index:].shape[1]) < minsize):
                 self.train_data.append(sample.iloc[:, :index])
                 self.val_data.append(sample.iloc[:, index:])
                 temp_sizes.append(sample.iloc[:, :index].shape[1])
                 temp_sizes.append(sample.iloc[:, index:].shape[1])
+
+            else:
+                self.train_data.append(sample)
+                temp_sizes.append(sample.shape[1])
 
         # For keeping track of max size the slice can be.
         self.min_len = min(temp_sizes)

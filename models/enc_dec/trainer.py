@@ -6,8 +6,6 @@ import pandas as pd
 from params import *
 import argparse
 
-# This is constant.
-DATA_DIRECTORY = 'input_data'
 
 # add the root directory of the project to the path..
 sys.path.insert(1, os.path.join(sys.path[0], '../..'))
@@ -28,17 +26,14 @@ args = parser.parse_args()
 input_dir = args.data
 test_dir = args.test
 
-# Join the directories for our data folder. 
-input_dir = os.path.join(DATA_DIRECTORY, input_dir)
-test_dir = os.path.join(DATA_DIRECTORY, test_dir)
-
 # Get all the files.
 files = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
 if test_dir is not None:
     test_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir)]
 else:
     test_files = None
-
+files.sort()
+test_files.sort()
 # Generate the data handler object
 otu_handler = OTUHandler(files, test_files)
 
