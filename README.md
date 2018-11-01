@@ -42,7 +42,7 @@ Given a directory of data as produced from above (let's call it `input_dir`) tra
 
 To train a model do:
 ```
-python models/<some_model>/trainer.py -d input_data/all_studies_reduced_62
+python dev/models/<some_model>/trainer.py -d input_data/all_studies_reduced_62
 ```
 
 ## Evaluating a trained model
