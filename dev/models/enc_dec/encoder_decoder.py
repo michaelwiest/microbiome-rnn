@@ -181,6 +181,8 @@ class EncoderDecoder(nn.Module):
             print('\tUpdated best model state!')
         elif current_epoch - self.best_model_epoch > early_stopping_patience:
             stop_training = True
+        else:
+            stop_training = False
 
         return stop_training
 
