@@ -108,6 +108,10 @@ class EncoderDecoder(nn.Module):
         self.use_gpu = use_gpu
         self.hidden = None
 
+        self.best_model = self.state_dict()
+        self.best_model_epoch = 0
+        self.best_loss = np.inf
+
 
     def forward(self, input_data, teacher_data=None):
         # Teacher data should be a tuple of length two where the first value
@@ -156,6 +160,30 @@ class EncoderDecoder(nn.Module):
                 backward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
 
         return forward_pred.transpose(1, 2).transpose(0, 2), backward_pred.transpose(1, 2).transpose(0, 2)
+
+    def __evaluate_early_stopping(self,
+                                current_epoch,
+                                early_stopping_patience,
+                                validation_index=2):
+        '''
+        Check if our current state is better than the best one so far.
+        if so then update it. Also if we are beyond the patience limit then
+        we should stop if no model improvement.
+        '''
+
+        losses = self.loss_tensor[:, :, -1].sum(axis=1).tolist()
+        val_loss = losses[validation_index]
+        if val_loss < self.best_loss:
+            self.best_model = self.state_dict()
+            self.best_loss = val_loss
+            self.best_model_epoch = current_epoch
+            stop_training = False
+        elif current_epoch - self.best_model_epoch > early_stopping_patience:
+            stop_training = True
+
+        return stop_training
+
+
 
     def __init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
@@ -272,7 +300,8 @@ class EncoderDecoder(nn.Module):
                     lr,
                     samples_per_epoch,
                     teacher_force_frac,
-                    slice_incr_frequency=None, save_params=None):
+                    slice_incr_frequency=None, save_params=None,
+                    early_stopping_patience=10):
         np.random.seed(1)
 
         self.batch_size = batch_size
@@ -366,10 +395,17 @@ class EncoderDecoder(nn.Module):
                         slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
                         print('Increased slice length to: {}'.format(slice_len))
 
+
+            stop_early = self.__evaluate_early_stopping(epoch,
+                                                        early_stopping_patience)
             # Save the model and logging information.
             if save_params is not None:
-                torch.save(self.state_dict(), save_params[0])
+                torch.save(self.best_model, save_params[0])
                 print('Saved model state to: {}'.format(save_params[0]))
+                print('Best model from epoch: {}'.format(self.best_model_epoch))
+
+            if stop_early:
+                break
 
     def daydream(self, primer, predict_len=100, window_size=20):
         '''
