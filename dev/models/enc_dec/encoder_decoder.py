@@ -178,6 +178,7 @@ class EncoderDecoder(nn.Module):
             self.best_loss = val_loss
             self.best_model_epoch = current_epoch
             stop_training = False
+            print('\tUpdated best model state!')
         elif current_epoch - self.best_model_epoch > early_stopping_patience:
             stop_training = True
 
