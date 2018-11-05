@@ -1,6 +1,6 @@
 batch_size = 50
 # Size of the hidden layers of the network.
-hidden_dim = 256
+hidden_dim = 2048
 # How many samples to check before one epoch. Kind of arbitrary.
 samples_per_epoch = 500000
 num_epochs = 50
@@ -19,13 +19,14 @@ slice_incr_frequency = 2
 teacher_force_frac = 0.5
 
 # How many stacked LSTMs to use?
-num_lstms = 2
+num_lstms = 1
 
 # Early stopping stuff
 use_early_stopping = True
 early_stopping_patience = 15
 
-additional_comments = ''
+additional_comments = '_swapped_test'
+
 run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
