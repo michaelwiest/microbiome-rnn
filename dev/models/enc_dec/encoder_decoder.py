@@ -304,7 +304,9 @@ class EncoderDecoder(nn.Module):
                     samples_per_epoch,
                     teacher_force_frac,
                     weight_decay,
-                    slice_incr_frequency=None, save_params=None,
+                    slice_incr_frequency=None,
+                    save_params=None,
+                    use_early_stopping=True,
                     early_stopping_patience=10):
         np.random.seed(1)
 
@@ -409,7 +411,7 @@ class EncoderDecoder(nn.Module):
                 print('Saved model state to: {}'.format(save_params[0]))
                 print('Best model from epoch: {}'.format(self.best_model_epoch))
 
-            if stop_early:
+            if stop_early and use_early_stopping:
                 break
 
     def daydream(self, primer, predict_len=100, window_size=20):

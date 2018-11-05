@@ -66,5 +66,7 @@ rnn.do_training(seq_len, batch_size,
                teacher_force_frac,
                weight_decay,
                save_params=save_params,
+               use_early_stopping=use_early_stopping,
+               early_stopping_patience=early_stopping_patience,
                slice_incr_frequency=slice_incr_frequency
                )

@@ -21,6 +21,10 @@ teacher_force_frac = 0.5
 # How many stacked LSTMs to use?
 num_lstms = 2
 
+# Early stopping stuff
+use_early_stopping = True
+early_stopping_patience = 15
+
 additional_comments = ''
 run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               seq_len,
