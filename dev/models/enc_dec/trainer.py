@@ -60,10 +60,11 @@ rnn = EncoderDecoder(hidden_dim,
 
 
 rnn.do_training(seq_len, batch_size,
-                                       num_epochs,
-                                       learning_rate,
-                                       samples_per_epoch,
-                                       teacher_force_frac,
-                                       save_params=save_params,
-                                       slice_incr_frequency=slice_incr_frequency
-                                       )
+               num_epochs,
+               learning_rate,
+               samples_per_epoch,
+               teacher_force_frac,
+               weight_decay,
+               save_params=save_params,
+               slice_incr_frequency=slice_incr_frequency
+               )

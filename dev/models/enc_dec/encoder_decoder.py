@@ -303,6 +303,7 @@ class EncoderDecoder(nn.Module):
                     lr,
                     samples_per_epoch,
                     teacher_force_frac,
+                    weight_decay,
                     slice_incr_frequency=None, save_params=None,
                     early_stopping_patience=10):
         np.random.seed(1)
@@ -315,7 +316,8 @@ class EncoderDecoder(nn.Module):
 
         loss_function = nn.MSELoss()
         # TODO: Try Adagrad & RMSProp
-        optimizer = optim.Adam(self.parameters(), lr=lr)
+        optimizer = optim.Adam(self.parameters(), lr=lr,
+                               weight_decay=weight_decay)
 
         # For logging the data for plotting
 
