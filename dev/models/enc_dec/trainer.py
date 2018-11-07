@@ -22,9 +22,12 @@ parser.add_argument("-d", "--data", type=str,
                     help="The directory of input training data.")
 parser.add_argument("-t", "--test", type=str,
                     help="The directory of excluded test data.")
+parser.add_argument("-g", "--gpu", type=int,
+                    help="GPU index to use.")
 args = parser.parse_args()
 input_dir = args.data
 test_dir = args.test
+gpu_to_use = args.gpu
 
 # Get all the files.
 files = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
@@ -44,6 +47,8 @@ otu_handler.normalize_data()
 print('Loaded in data. Ready to train.\n')
 
 use_gpu = torch.cuda.is_available()
+if use_gpu:
+    torch.cuda.set_device(gpu_to_use)
 
 if not os.path.isdir(output_dir):
     os.mkdir(output_dir)
