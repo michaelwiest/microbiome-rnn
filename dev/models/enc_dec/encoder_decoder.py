@@ -318,7 +318,7 @@ class EncoderDecoder(nn.Module):
 
         loss_function = nn.MSELoss()
         # TODO: Try Adagrad & RMSProp
-        optimizer = optim.Adagrad(self.parameters(), lr=lr,
+        optimizer = optim.RMSprop(self.parameters(), lr=lr,
                                   weight_decay=weight_decay)
 
         # For logging the data for plotting
