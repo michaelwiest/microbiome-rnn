@@ -8,6 +8,7 @@ from_qiita2/*
 reference_data/*
 subsetted_data/*
 subsetted_data_*/*
+for_manish/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
