@@ -420,9 +420,9 @@ class VariatonalEncoderDecoder(nn.Module):
 
             # Get some train and val losses. These can be used for early
             # stopping later on.
-            losses = self.get_intermediate_losses(loss_function, slice_len,
-                                                  teacher_force_frac)
-            self.__print_and_log_losses(losses, save_params)
+            losses, klds = self.get_intermediate_losses(loss_function, slice_len,
+                                                        teacher_force_frac)
+            self.__print_and_log_losses(losses, klds, save_params)
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
