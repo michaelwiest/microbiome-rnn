@@ -27,7 +27,7 @@ early_stopping_patience = 15
 
 additional_comments = '_swapped_test'
 
-run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
+run_suffix = '_VAE_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               seq_len,
                                               reduced_num_strains,
                                               slice_incr_frequency,
@@ -35,4 +35,4 @@ run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.npy'.format(run_suffix)
-output_dir = 'enc_dec_output'
+output_dir = 'VAE_output'
