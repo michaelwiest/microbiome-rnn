@@ -16,7 +16,7 @@ import csv
 
 
 
-class EncoderDecoder(nn.Module):
+class VariatonalEncoderDecoder(nn.Module):
     '''
     Model for predicting OTU counts of microbes given historical data.
     Uses fully connected layers and an LSTM (could use 1d convolutions in the
@@ -29,8 +29,10 @@ class EncoderDecoder(nn.Module):
                  num_lstms,
                  use_gpu=False,
                  LSTM_in_size=None):
-        super(EncoderDecoder, self).__init__()
+        super(VariatonalEncoderDecoder, self).__init__()
         self.hidden_dim = hidden_dim
+        if not self.hidden_dim % 2 == 0:
+            raise ValueError('Please provide an even integer for the hiden dim.')
         self.otu_handler = otu_handler
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
@@ -103,6 +105,19 @@ class EncoderDecoder(nn.Module):
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.Tanh()
         )
+        self.mean_linears = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU()
+        )
+
+        self.logvar_linears = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU()
+        )
 
         # Non-torch inits.
         self.use_gpu = use_gpu
@@ -112,6 +127,11 @@ class EncoderDecoder(nn.Module):
         self.best_model_epoch = 0
         self.best_loss = np.inf
 
+
+    def reparametrize(self, mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = Variable(torch.randn(std.size()))
+        return eps * std + mu
 
     def forward(self, input_data, teacher_data=None):
         # Teacher data should be a tuple of length two where the first value
@@ -123,6 +143,13 @@ class EncoderDecoder(nn.Module):
         d = self.strain_compressor(input_data)
         _, self.hidden = self.encoder(d, self.hidden)
 
+        # This is for keeping near mean and unit variance.
+        # print((self.hidden[0]))
+        self.mu = self.mean_linears(self.hidden[0])
+        self.logvar = self.logvar_linears(self.hidden[0])
+
+        r = self.reparametrize(self.mu, self.logvar)
+        self.hidden = (r, self.hidden[1])
 
         forward_hidden = self.hidden
         backward_hidden = self.hidden
@@ -221,7 +248,7 @@ class EncoderDecoder(nn.Module):
             samples = ['train', 'validation']
 
         strain_losses = np.zeros((len(samples), self.otu_handler.num_strains))
-
+        klds = [0] * len(samples)
         for i, which_sample in enumerate(samples):
 
             for b in range(num_batches):
@@ -269,11 +296,14 @@ class EncoderDecoder(nn.Module):
                                                               forward_targets[:, strain, :])
                     strain_losses[i, strain] += loss_function(backward_preds[:, strain, :],
                                                               backward_targets[:, strain, :])
-
+                klds[i] += -0.5 * torch.sum(1 + self.logvar - self.mu.pow(2) -
+                                            self.logvar.exp())
         strain_losses /= (2 * num_batches * self.otu_handler.num_strains)
-        return strain_losses
+        klds[i] /= num_batches
+        return strain_losses, klds
 
-    def __print_and_log_losses(self, new_losses, save_params,
+    def __print_and_log_losses(self, strain_losses,
+                               klds, save_params,
                                instantiate=False # Overwrite tensor if first time.
                                ):
         '''
@@ -281,10 +311,10 @@ class EncoderDecoder(nn.Module):
         It also prints out the data in a readable fashion.
         '''
         if instantiate:
-            self.loss_tensor = np.expand_dims(new_losses, axis=-1)
+            self.loss_tensor = np.expand_dims(strain_losses, axis=-1)
         else:
-            new_losses = np.expand_dims(new_losses, axis=-1)
-            self.loss_tensor = np.concatenate((self.loss_tensor, new_losses),
+            strain_losses = np.expand_dims(strain_losses, axis=-1)
+            self.loss_tensor = np.concatenate((self.loss_tensor, strain_losses),
                                               axis=-1)
 
         to_print = self.loss_tensor[:, :, -1].sum(axis=1).tolist()
@@ -292,7 +322,7 @@ class EncoderDecoder(nn.Module):
                      ' Test loss: {}']
         for i, tp in enumerate(to_print):
             print(print_str[i].format(tp))
-
+        print(klds)
         if save_params is not None:
             np.save(save_params[1], self.loss_tensor)
 
@@ -326,11 +356,12 @@ class EncoderDecoder(nn.Module):
 
 
         # Get some initial losses.
-        losses = self.get_intermediate_losses(loss_function, slice_len,
+        strain_losses, klds = self.get_intermediate_losses(loss_function, slice_len,
                                               teacher_force_frac)
 
         self.loss_tensor = None
-        self.__print_and_log_losses(losses, save_params, instantiate=True)
+        self.__print_and_log_losses(strain_losses, klds,
+                                    save_params, instantiate=True)
 
         for epoch in range(epochs):
             iterate = 0
@@ -378,7 +409,9 @@ class EncoderDecoder(nn.Module):
                 # Finally step with the optimizer.
                 floss = loss_function(forward_preds, forward_targets)
                 bloss = loss_function(backward_preds, backward_targets)
-                loss = floss + bloss
+                KLD = -0.5 * torch.sum(1 + self.logvar - self.mu.pow(2) -
+                                       self.logvar.exp())
+                loss = floss + bloss + KLD
                 loss.backward()
                 optimizer.step()
                 iterate += 1

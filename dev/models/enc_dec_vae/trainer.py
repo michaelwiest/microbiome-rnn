@@ -1,4 +1,4 @@
-from encoder_decoder import EncoderDecoder
+from variational_encoder_decoder import VariatonalEncoderDecoder
 import torch
 import os
 import sys
@@ -58,7 +58,7 @@ save_params = (os.path.join(output_dir, model_name),
                os.path.join(output_dir, log_name))
 
 
-rnn = EncoderDecoder(hidden_dim,
+rnn = VariatonalEncoderDecoder(hidden_dim,
                      otu_handler,
                      num_lstms,
                      use_gpu,
