@@ -130,7 +130,7 @@ class VariatonalEncoderDecoder(nn.Module):
 
     def reparametrize(self, mu, logvar):
         std = torch.exp(0.5*logvar)
-        eps = add_cuda_to_variable(torch.randn(std.size()))
+        eps = add_cuda_to_variable(torch.randn(std.size()), self.use_gpu)
         return eps * std + mu
 
     def forward(self, input_data, teacher_data=None):
