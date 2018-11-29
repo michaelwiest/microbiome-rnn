@@ -319,7 +319,7 @@ class EncoderDecoder(nn.Module):
         loss_function = nn.MSELoss()
         # TODO: Try Adagrad & RMSProp
         optimizer = optim.Adam(self.parameters(), lr=lr,
-                                  weight_decay=weight_decay)
+                               weight_decay=weight_decay)
 
         # For logging the data for plotting
 
@@ -402,9 +402,12 @@ class EncoderDecoder(nn.Module):
                         slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
                         print('Increased slice length to: {}'.format(slice_len))
 
-
-            stop_early = self.__evaluate_early_stopping(epoch,
-                                                        early_stopping_patience)
+            if use_early_stopping:
+                stop_early = self.__evaluate_early_stopping(epoch,
+                                                            early_stopping_patience)
+            else:
+                self.best_model = self.state_dict()
+                self.best_model_epoch = epoch
             # Save the model and logging information.
             if save_params is not None:
                 torch.save(self.best_model, save_params[0])
