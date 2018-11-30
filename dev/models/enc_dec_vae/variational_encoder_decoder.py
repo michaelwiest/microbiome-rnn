@@ -335,6 +335,7 @@ class VariatonalEncoderDecoder(nn.Module):
                     samples_per_epoch,
                     teacher_force_frac,
                     weight_decay,
+                    kl_weight=1,
                     slice_incr_frequency=None,
                     save_params=None,
                     use_early_stopping=True,
@@ -342,6 +343,7 @@ class VariatonalEncoderDecoder(nn.Module):
         np.random.seed(1)
 
         self.batch_size = batch_size
+        self.kl_weight = kl_weight
         self.__init_hidden()
 
         if self.use_gpu:
@@ -357,7 +359,7 @@ class VariatonalEncoderDecoder(nn.Module):
 
         # Get some initial losses.
         strain_losses, klds = self.get_intermediate_losses(loss_function, slice_len,
-                                              teacher_force_frac)
+                                                           teacher_force_frac)
 
         self.loss_tensor = None
         self.__print_and_log_losses(strain_losses, klds,
@@ -411,7 +413,7 @@ class VariatonalEncoderDecoder(nn.Module):
                 bloss = loss_function(backward_preds, backward_targets)
                 KLD = -0.5 * torch.sum(1 + self.logvar - self.mu.pow(2) -
                                        self.logvar.exp())
-                loss = floss + bloss + KLD
+                loss = floss + bloss + self.kl_weight * KLD
                 loss.backward()
                 optimizer.step()
                 iterate += 1

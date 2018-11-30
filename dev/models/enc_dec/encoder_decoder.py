@@ -44,8 +44,10 @@ class EncoderDecoder(nn.Module):
         self.strain_compressor = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, hidden_dim),
             nn.ReLU(),
+            nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
+            nn.Dropout(0.5),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.5),
