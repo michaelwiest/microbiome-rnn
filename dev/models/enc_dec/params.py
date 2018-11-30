@@ -5,7 +5,7 @@ hidden_dim = 2048
 samples_per_epoch = 500000
 num_epochs = 50
 learning_rate = 0.0000005
-weight_decay = 0.0000001
+weight_decay = 0
 # Length of the sequence being passed to the LSTM or FFN.
 seq_len = 5
 # For the compression step with the LSTM how many strains to reduce it to.
