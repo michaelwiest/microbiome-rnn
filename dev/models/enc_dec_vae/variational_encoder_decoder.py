@@ -192,7 +192,7 @@ class VariatonalEncoderDecoder(nn.Module):
     def __evaluate_early_stopping(self,
                                 current_epoch,
                                 early_stopping_patience,
-                                validation_index=2):
+                                validation_index=1):
         '''
         Check if our current state is better than the best one so far.
         if so then update it. Also if we are beyond the patience limit then
