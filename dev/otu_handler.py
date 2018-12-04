@@ -1,8 +1,18 @@
 import copy
 import pandas as pd
 import numpy as np
-# from skbio.stats.composition import clr, ilr
 from scipy.stats.mstats import gmean, zscore
+
+def clr(some_array, axis):
+    '''
+    Had to reimplement this because the server is python2 and
+    skbio is only python3
+    '''
+    gms = gmean(some_array, axis=axis)
+    gms = np.expand_dims(gms, axis=axis)
+    gms = np.repeat(gms, some_array.shape[axis], axis=axis)
+    return np.log(some_array / gms)
+
 
 
 class OTUHandler(object):

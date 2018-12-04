@@ -21,6 +21,9 @@ teacher_force_frac = 0.5
 # How many stacked LSTMs to use?
 num_lstms = 1
 
+# How to normalize the data. Can be 'clr' or 'zscore'
+norm_method = 'zscore'
+
 # Weight assigned to KL divergence for variational representation
 kl_weight = 1
 
