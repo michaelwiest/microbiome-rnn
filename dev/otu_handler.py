@@ -113,9 +113,11 @@ class OTUHandler(object):
                           sample_index,
                           sample_timepoint_range):
         '''
+        THIS DOESN'T REALLY WORK AND SHOULDN'T BE CALLED.
+
         Function for returning the normalized values to the raw values.
         This is good for plotting the predicted values versus actual values.
-        sample_timepoint_range: tuple or list of: (start_index, end_index)
+        sample_timepoint_range: tuple or list of: (start_index, end_index).
         '''
 
         if (type(sample_timepoint_range) not in [list, tuple] or
