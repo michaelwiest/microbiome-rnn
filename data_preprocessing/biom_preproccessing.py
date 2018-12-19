@@ -9,13 +9,52 @@ import sys
 from biom import load_table
 import numpy as np
 import pandas as pd
+import os
+import argparse
 
-biom_name = sys.argv[1]
+def merge_dicts(*dict_args):
+    """
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
+
+
+# Read in our data
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--biom", type=str,
+                    help="The BIOM file to handle.")
+parser.add_argument("-t", "--taxonomy", type=str,
+                    help="The file or directory of taxonomy data.")
+
+
+args = parser.parse_args()
+biom_name = args.biom
 biom_base = ''.join(biom_name.split('.')[:-1])
-tax_name = sys.argv[2]
-sort_dates = True
+tax_name = args.taxonomy
 
+'''
+Load in the taxonomy data.
+'''
+if os.isdir(tax_name):
+    tax_files = [os.path.join(tax_name, f) for f in os.listdir(tax_name)]
+    tax_dicts = []
+    # Read in the files.
+    for file in tax_files:
+        tax_file = np.loadtxt(file, delimiter='\t', dtype=str)
+        tax_dicts.append(dict(zip(tax_file[:, 0], tax[:, 1])))
+    # Combine the dictionaries.
+    mapping = merge_dicts(*tax_dicts)
 
+elif os.isfile(tax_name):
+    tax_file = np.loadtxt(tax_name, delimiter='\t', dtype=str)
+    mapping = dict(zip(tax_file[:, 0], tax_file[:, 1]))
+else:
+    raise ValueError('Please check the file or directory being supplied'
+                     'for the taxonomy.')
 '''
 Break out into each sample based on the metadata.
 '''
@@ -44,10 +83,6 @@ print(output_fnames)
 '''
 Add the taxonomy and sort
 '''
-tax = np.loadtxt(tax_name, delimiter='\t', dtype=str)
-mapping = dict(zip(tax[:, 0], tax[:, 1]))
-
-
 for i, table in enumerate(output_tables):
     # Add taxonomy to each sample.
     df = pd.DataFrame(table.to_dataframe())
@@ -59,14 +94,13 @@ for i, table in enumerate(output_tables):
 
     # If we want to sort the dates. Some samples don't have correct date
     # information associated so this doesn't work.
-    if sort_dates:
-        dates = [m['collection_timestamp'] for m in table.metadata()]
-        to_save = to_save.T
-        to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
-                                         errors='coerce')
-        to_save.dropna(subset=['date'], inplace=True)
-        to_save.sort_values(by=['date'], inplace=True)
-        to_save.drop(['date'], axis=1, inplace=True)
-        to_save = to_save.T
+    dates = [m['collection_timestamp'] for m in table.metadata()]
+    to_save = to_save.T
+    to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
+                                     errors='coerce')
+    to_save.dropna(subset=['date'], inplace=True)
+    to_save.sort_values(by=['date'], inplace=True)
+    to_save.drop(['date'], axis=1, inplace=True)
+    to_save = to_save.T
     print(to_save.shape)
     to_save.to_csv(output_fnames[i] + '_sorted_tax.csv')
