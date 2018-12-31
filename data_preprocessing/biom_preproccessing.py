@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
+import pdb
 
 def merge_dicts(*dict_args):
     """
@@ -39,17 +40,17 @@ tax_name = args.taxonomy
 '''
 Load in the taxonomy data.
 '''
-if os.isdir(tax_name):
+if os.path.isdir(tax_name):
     tax_files = [os.path.join(tax_name, f) for f in os.listdir(tax_name)]
     tax_dicts = []
     # Read in the files.
     for file in tax_files:
         tax_file = np.loadtxt(file, delimiter='\t', dtype=str)
-        tax_dicts.append(dict(zip(tax_file[:, 0], tax[:, 1])))
+        tax_dicts.append(dict(zip(tax_file[:, 0], tax_file[:, 1])))
     # Combine the dictionaries.
     mapping = merge_dicts(*tax_dicts)
 
-elif os.isfile(tax_name):
+elif os.path.isfile(tax_name):
     tax_file = np.loadtxt(tax_name, delimiter='\t', dtype=str)
     mapping = dict(zip(tax_file[:, 0], tax_file[:, 1]))
 else:
@@ -79,7 +80,7 @@ for subject in all_subjects:
 
 print(output_tables)
 print(output_fnames)
-
+# pdb.set_trace()
 '''
 Add the taxonomy and sort
 '''
