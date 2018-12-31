@@ -47,4 +47,4 @@ for cd in child_dirs:
     print('\n------\n')
     os.system(metadata_to_execute)
     os.system(taxonomy_to_execute)
-    break
+    
