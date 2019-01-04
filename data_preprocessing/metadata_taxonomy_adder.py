@@ -4,7 +4,22 @@ import numpy as np
 import pandas as pd
 import os
 import argparse
+'''
+This is really just a helper script for performing some qiime functions on a
+large number of files.
 
+The structure of the files should be:
+<parent dir>
+    <study 1>
+        taxonomy.fa
+        biom.biom
+        metadata.txt
+    <study 2>
+        taxonomy.fa
+        ...
+Each sub-directory should have the same number of files with the same file
+extensions.
+'''
 
 # Read in our data
 parser = argparse.ArgumentParser()
@@ -47,4 +62,3 @@ for cd in child_dirs:
     print('\n------\n')
     os.system(metadata_to_execute)
     os.system(taxonomy_to_execute)
-    

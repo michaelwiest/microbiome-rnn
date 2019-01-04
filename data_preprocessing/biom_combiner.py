@@ -28,6 +28,8 @@ for i, bf in enumerate(biom_files):
         output = bf
     else:
         output = output.merge(bf)
+    print('Completed {} of {}'.format(i + 1, len(biom_files)))
+    print('Output shape is: {}'.format(output.shape))
 
 # Write the output.
 with open('{}'.format(outname), 'w') as f:
