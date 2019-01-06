@@ -88,7 +88,7 @@ print(output_fnames)
 '''
 Add the taxonomy and sort
 '''
-for i, table in enumerate(output_tables):
+for j, table in enumerate(output_tables):
     # Add taxonomy to each sample.
     df = pd.DataFrame(table.to_dataframe())
     tv = df.values
@@ -108,4 +108,6 @@ for i, table in enumerate(output_tables):
     to_save.drop(['date'], axis=1, inplace=True)
     to_save = to_save.T
     print(to_save.shape)
-    to_save.to_csv(output_fnames[i] + '_sorted_tax.csv')
+    output_fname = output_fnames[j] + '_sorted_tax.csv'
+    print(output_fname)
+    to_save.to_csv(output_fname)
