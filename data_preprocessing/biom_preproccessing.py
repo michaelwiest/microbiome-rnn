@@ -65,7 +65,7 @@ output_tables = []
 output_fnames = []
 all_subjects = list(set([m['host_subject_id'] for m in table.metadata()]))
 all_samples = list(set([m['sample_type'] for m in table.metadata()]))
-all_subects = [as for as in all_subjects if not as.lower.startswith('blank')]
+all_subjects = [a for a in all_subjects if not a.lower().startswith('blank')]
 print('Subjects:\n{}'.format(all_subjects))
 print('Samples:\n{}'.format(all_samples))
 
