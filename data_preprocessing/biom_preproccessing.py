@@ -89,25 +89,29 @@ print(output_fnames)
 Add the taxonomy and sort
 '''
 for j, table in enumerate(output_tables):
-    # Add taxonomy to each sample.
-    df = pd.DataFrame(table.to_dataframe())
-    tv = df.values
-    tcols = df.columns
-    indices = list(df.index.values)
-    new_index = [mapping[i] for i in indices]
-    to_save = pd.DataFrame(tv, index=new_index, columns=tcols)
 
-    # If we want to sort the dates. Some samples don't have correct date
-    # information associated so this doesn't work.
-    dates = [m['collection_timestamp'] for m in table.metadata()]
-    to_save = to_save.T
-    to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
-                                     errors='coerce')
-    to_save.dropna(subset=['date'], inplace=True)
-    to_save.sort_values(by=['date'], inplace=True)
-    to_save.drop(['date'], axis=1, inplace=True)
-    to_save = to_save.T
-    print(to_save.shape)
-    output_fname = output_fnames[j] + '_sorted_tax.csv'
-    print(output_fname)
-    to_save.to_csv(output_fname)
+    # need this check for some reason because if not then it errors converting
+    # to df.
+    if table.shape[1] > 1:
+        df = pd.DataFrame(table.to_dataframe())
+        tv = df.values
+        tcols = df.columns
+        # Add taxonomy to each sample.
+        indices = list(df.index.values)
+        new_index = [mapping[i] for i in indices]
+        to_save = pd.DataFrame(tv, index=new_index, columns=tcols)
+
+        # If we want to sort the dates. Some samples don't have correct date
+        # information associated so this doesn't work.
+        dates = [m['collection_timestamp'] for m in table.metadata()]
+        to_save = to_save.T
+        to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
+                                         errors='coerce')
+        to_save.dropna(subset=['date'], inplace=True)
+        to_save.sort_values(by=['date'], inplace=True)
+        to_save.drop(['date'], axis=1, inplace=True)
+        to_save = to_save.T
+        print(to_save.shape)
+        output_fname = output_fnames[j] + '_sorted_tax.csv'
+        print(output_fname)
+        to_save.to_csv(output_fname)
