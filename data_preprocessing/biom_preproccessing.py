@@ -56,6 +56,7 @@ elif os.path.isfile(tax_name):
 else:
     raise ValueError('Please check the file or directory being supplied'
                      'for the taxonomy.')
+print('Finished loading taxonomy')
 '''
 Break out into each sample based on the metadata.
 '''
@@ -64,9 +65,11 @@ output_tables = []
 output_fnames = []
 all_subjects = list(set([m['host_subject_id'] for m in table.metadata()]))
 all_samples = list(set([m['sample_type'] for m in table.metadata()]))
+print('Subjects:\n{}'.format(all_subjects))
+print('Samples:\n{}'.format(all_samples))
 
 # Subset each of the files.
-for subject in all_subjects:
+for i, subject in enumerate(all_subjects):
     subject_fxn = lambda val, id_, md: md['host_subject_id'] == '{}'.format(subject)
     subject_sub = table.filter(subject_fxn, inplace=False)
     for sample in all_samples:
@@ -77,10 +80,10 @@ for subject in all_subjects:
             output_tables.append(sample_sub)
             new_name = biom_base + '_{}_{}'.format(subject, sample)
             output_fnames.append(new_name)
-
+    print('Finished {} of {} subjects'.format(i + 1, len(all_subjects)))
 print(output_tables)
 print(output_fnames)
-# pdb.set_trace()
+
 '''
 Add the taxonomy and sort
 '''
