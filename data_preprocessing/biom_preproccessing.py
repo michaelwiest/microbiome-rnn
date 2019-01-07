@@ -9,13 +9,54 @@ import sys
 from biom import load_table
 import numpy as np
 import pandas as pd
+import os
+import argparse
+import pdb
 
-biom_name = sys.argv[1]
+def merge_dicts(*dict_args):
+    """
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
+
+
+# Read in our data
+parser = argparse.ArgumentParser()
+parser.add_argument("-b", "--biom", type=str,
+                    help="The BIOM file to handle.")
+parser.add_argument("-t", "--taxonomy", type=str,
+                    help="The file or directory of taxonomy data.")
+
+
+args = parser.parse_args()
+biom_name = args.biom
 biom_base = ''.join(biom_name.split('.')[:-1])
-tax_name = sys.argv[2]
-sort_dates = True
+tax_name = args.taxonomy
 
+'''
+Load in the taxonomy data.
+'''
+if os.path.isdir(tax_name):
+    tax_files = [os.path.join(tax_name, f) for f in os.listdir(tax_name)]
+    tax_dicts = []
+    # Read in the files.
+    for file in tax_files:
+        tax_file = np.loadtxt(file, delimiter='\t', dtype=str)
+        tax_dicts.append(dict(zip(tax_file[:, 0], tax_file[:, 1])))
+    # Combine the dictionaries.
+    mapping = merge_dicts(*tax_dicts)
 
+elif os.path.isfile(tax_name):
+    tax_file = np.loadtxt(tax_name, delimiter='\t', dtype=str)
+    mapping = dict(zip(tax_file[:, 0], tax_file[:, 1]))
+else:
+    raise ValueError('Please check the file or directory being supplied'
+                     'for the taxonomy.')
+print('Finished loading taxonomy')
 '''
 Break out into each sample based on the metadata.
 '''
@@ -24,9 +65,12 @@ output_tables = []
 output_fnames = []
 all_subjects = list(set([m['host_subject_id'] for m in table.metadata()]))
 all_samples = list(set([m['sample_type'] for m in table.metadata()]))
+all_subjects = [a for a in all_subjects if not a.lower().startswith('blank')]
+print('Subjects:\n{}'.format(all_subjects))
+print('Samples:\n{}'.format(all_samples))
 
 # Subset each of the files.
-for subject in all_subjects:
+for i, subject in enumerate(all_subjects):
     subject_fxn = lambda val, id_, md: md['host_subject_id'] == '{}'.format(subject)
     subject_sub = table.filter(subject_fxn, inplace=False)
     for sample in all_samples:
@@ -37,29 +81,28 @@ for subject in all_subjects:
             output_tables.append(sample_sub)
             new_name = biom_base + '_{}_{}'.format(subject, sample)
             output_fnames.append(new_name)
-
+    print('Finished {} of {} subjects'.format(i + 1, len(all_subjects)))
 print(output_tables)
 print(output_fnames)
 
 '''
 Add the taxonomy and sort
 '''
-tax = np.loadtxt(tax_name, delimiter='\t', dtype=str)
-mapping = dict(zip(tax[:, 0], tax[:, 1]))
+for j, table in enumerate(output_tables):
 
+    # need this check for some reason because if not then it errors converting
+    # to df.
+    if table.shape[1] > 1:
+        df = pd.DataFrame(table.to_dataframe())
+        tv = df.values
+        tcols = df.columns
+        # Add taxonomy to each sample.
+        indices = list(df.index.values)
+        new_index = [mapping[i] for i in indices]
+        to_save = pd.DataFrame(tv, index=new_index, columns=tcols)
 
-for i, table in enumerate(output_tables):
-    # Add taxonomy to each sample.
-    df = pd.DataFrame(table.to_dataframe())
-    tv = df.values
-    tcols = df.columns
-    indices = list(df.index.values)
-    new_index = [mapping[i] for i in indices]
-    to_save = pd.DataFrame(tv, index=new_index, columns=tcols)
-
-    # If we want to sort the dates. Some samples don't have correct date
-    # information associated so this doesn't work.
-    if sort_dates:
+        # If we want to sort the dates. Some samples don't have correct date
+        # information associated so this doesn't work.
         dates = [m['collection_timestamp'] for m in table.metadata()]
         to_save = to_save.T
         to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
@@ -68,5 +111,7 @@ for i, table in enumerate(output_tables):
         to_save.sort_values(by=['date'], inplace=True)
         to_save.drop(['date'], axis=1, inplace=True)
         to_save = to_save.T
-    print(to_save.shape)
-    to_save.to_csv(output_fnames[i] + '_sorted_tax.csv')
+        print(to_save.shape)
+        output_fname = output_fnames[j] + '_sorted_tax.csv'
+        print(output_fname)
+        to_save.to_csv(output_fname)
