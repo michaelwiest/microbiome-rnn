@@ -16,7 +16,9 @@ import pdb
 def merge_dicts(*dict_args):
     """
     Given any number of dicts, shallow copy and merge into a new dict,
-    precedence goes to key value pairs in latter dicts.
+    precedence goes to key value pairs in latter dicts. This file only
+    takes one biom file at a time becuase there is a chance of naming
+    collisions with doing multiple files. 
     """
     result = {}
     for dictionary in dict_args:
