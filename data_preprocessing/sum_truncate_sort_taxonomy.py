@@ -97,7 +97,7 @@ def main():
         otu_dfs[i] = grouped
 
     # Write each of the files.
-    for i, to_write in enumerate(grouped):
+    for i, to_write in enumerate(otu_dfs):
         raw_fname = ''.join(files[i].split('.')[:-1]) + '_truncated_sorted.csv'
         to_write.to_csv(os.path.join(output_dir, raw_fname))
 
