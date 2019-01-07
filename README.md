@@ -26,8 +26,6 @@ At this point only the sampling sites or hosts of interest can be selected as th
 
 - `otu_matrix_completer`
 - `sum_truncate_sort_taxonomy`
-
-And finally
 - `top_N_strains`
 
 How to use each of these files is described in the respective file.
