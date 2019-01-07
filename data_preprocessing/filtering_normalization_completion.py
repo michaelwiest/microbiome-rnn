@@ -27,13 +27,18 @@ def main():
 
     # Read in all the files.
     files = os.listdir(indir)
-    dfs = [pd.read_csv(f, index_col=0, header=0) for f in files]
-
+    dfs = [pd.read_csv(os.path.join(indir, f), index_col=0, header=0) for f in files]
+    print('Finished loading data.')
     for i, df in enumerate(dfs):
+        out_name = ''.join(files[i].split('.')[:-1]) + '_completed_normalized.csv'
+        print(out_name)
+
         # Select rows with greater than the specified nonzero entries.
         good_indices = df.astype(bool).sum(axis=1).values > num_nonzero
         df = df.iloc[good_indices]
-
+        # This removes timepoints with all zero counts
+        df = df.loc[:, (df != 0).any(axis=0)]
+        print(df.shape)
         # Normalize the counts
         sums = np.repeat(np.expand_dims(df.sum(axis=0), 0),
                          df.shape[0], axis=0)
@@ -41,12 +46,15 @@ def main():
         df = df * meds / sums
 
         # Perform matrix completion.
-        completed = pd.DataFrame(untangle.complete_matrix(df.as_matrix().copy(),
-                                                          iteration=100, minval=0.1),
+        try:
+            completed = pd.DataFrame(untangle.complete_matrix(df.as_matrix().copy(),
+                                                          iteration=1000, minval=0.1),
                                  index=df.index, columns=df.columns)
 
-        out_name = ''.join(files[i].split('.')[:-1]) + '_completed_normalized.csv'
-        completed.to_csv(os.path.join(outdir, out_name))
+            completed.to_csv(os.path.join(outdir, out_name))
+        except:
+            print('Failed to complete this file.')
+
 
 
 if __name__ == '__main__':

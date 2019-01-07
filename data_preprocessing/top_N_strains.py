@@ -45,7 +45,7 @@ def main():
 
     # Get the OTUs from each file.
     for f in files:
-        otu_dfs.append(pd.read_csv(f, header=0, index_col=0))
+        otu_dfs.append(pd.read_csv(os.path.join(input_dir, f), header=0, index_col=0))
     print('Finished loading data')
 
     # This is what gets all of the appropriate strains from each file.
