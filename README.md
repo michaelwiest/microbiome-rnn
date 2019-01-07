@@ -24,9 +24,8 @@ The general workflow is to use the scripts in the `data_preprocessing` directory
 
 At this point only the sampling sites or hosts of interest can be selected as they are now in their own files (as opposed to combined into one `*.biom` file).
 
-The following can be performed in either order (Although I think this order is best).
-- `sum_truncate_sort_taxonomy`
 - `otu_matrix_completer`
+- `sum_truncate_sort_taxonomy`
 
 And finally
 - `top_N_strains`

@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 def main(fname):
-    num_nonzero = 2
+    num_nonzero = 10
     df = pd.read_csv(fname, index_col=0)
     # Select rows with greater than 2 nonzero entries.
     good_indices = df.astype(bool).sum(axis=1).values > num_nonzero
