@@ -21,8 +21,10 @@ teacher_force_frac = 0.5
 # How many stacked LSTMs to use?
 num_lstms = 1
 
-# How to normalize the data. Can be 'clr' or 'zscore'
-norm_method = 'zscore'
+# How to normalize the data. Can be 'clr' or 'zscore', or a list of either.
+norm_method = ['clr', 'zscore']
+# Where to save the model's results.
+output_dir = 'enc_dec_output'
 
 # Early stopping stuff
 use_early_stopping = True
@@ -38,4 +40,3 @@ run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               additional_comments)
 model_name = 'model{}.pt'.format(run_suffix)
 log_name = 'log{}.npy'.format(run_suffix)
-output_dir = 'enc_dec_output'

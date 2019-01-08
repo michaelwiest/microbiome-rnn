@@ -43,7 +43,13 @@ otu_handler = OTUHandler(files, test_files)
 
 # Set train and validation split
 otu_handler.set_train_val()
-otu_handler.normalize_data(method=norm_method)
+
+# Normalize the data.
+if type(norm_method) == list:
+    for nm in norm_method:
+        otu_handler.normalize_data(method=nm)
+else:
+    otu_handler.normalize_data(method=norm_method)
 
 print('Loaded in data. Ready to train.\n')
 
