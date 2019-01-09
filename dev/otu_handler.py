@@ -41,7 +41,7 @@ class OTUHandler(object):
         self.normalization_factors = {}
 
 
-    def set_train_val(self, percent=0.8, minsize=12):
+    def set_train_val(self, percent=0.8, minsize=20):
         '''
         Set the training and validation data for each sample. Can include
         a lower bound on size of train/validation
