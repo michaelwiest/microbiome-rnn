@@ -41,8 +41,12 @@ files.sort()
 # Generate the data handler object
 otu_handler = OTUHandler(files, test_files)
 
+# Calculate the minimum size that a slice of data can be.
+# This calculates the maximum possible size we can look at over training.
+minsize = int((num_epochs / slice_incr_frequency) + seq_len)
+
 # Set train and validation split
-otu_handler.set_train_val()
+otu_handler.set_train_val(minsize=minsize)
 
 # Normalize the data.
 if type(norm_method) == list:
@@ -72,13 +76,13 @@ rnn = EncoderDecoder(hidden_dim,
 
 
 rnn.do_training(seq_len, batch_size,
-               num_epochs,
-               learning_rate,
-               samples_per_epoch,
-               teacher_force_frac,
-               weight_decay,
-               save_params=save_params,
-               use_early_stopping=use_early_stopping,
-               early_stopping_patience=early_stopping_patience,
-               slice_incr_frequency=slice_incr_frequency
-               )
+                num_epochs,
+                learning_rate,
+                samples_per_epoch,
+                teacher_force_frac,
+                weight_decay,
+                save_params=save_params,
+                use_early_stopping=use_early_stopping,
+                early_stopping_patience=early_stopping_patience,
+                slice_incr_frequency=slice_incr_frequency
+                )
