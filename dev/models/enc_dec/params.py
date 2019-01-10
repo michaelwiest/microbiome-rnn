@@ -30,7 +30,7 @@ output_dir = 'enc_dec_output'
 use_early_stopping = True
 early_stopping_patience = 15
 
-additional_comments = '_swapped_test'
+additional_comments = ''
 
 run_suffix = '_EncDec_h{}_sl{}_rns{}_sif{}_numlstm{}{}'.format(hidden_dim,
                                               seq_len,
