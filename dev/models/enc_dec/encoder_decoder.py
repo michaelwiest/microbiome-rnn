@@ -125,7 +125,6 @@ class EncoderDecoder(nn.Module):
         d = self.strain_compressor(input_data)
         _, self.hidden = self.encoder(d, self.hidden)
 
-
         forward_hidden = self.hidden
         backward_hidden = self.hidden
         # print(self.hidden[0].size())
@@ -156,11 +155,11 @@ class EncoderDecoder(nn.Module):
             # If there is no teacher data then use the most recent prediction
             # to make the next prediction. Otherwise use the teacher data.
             if teacher_data is None:
-                forward_inp = self.strain_compressor(forward)
-                backward_inp = self.strain_compressor(backward)
+                forward_inp = forward
+                backward_inp = backward
             else:
-                forward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
-                backward_inp = self.strain_compressor(teacher_data[0][i, :, :].unsqueeze(0))
+                forward_inp = teacher_data[0][i, :, :].unsqueeze(0)
+                backward_inp = teacher_data[0][i, :, :].unsqueeze(0)
 
         return forward_pred.transpose(1, 2).transpose(0, 2), backward_pred.transpose(1, 2).transpose(0, 2)
 
