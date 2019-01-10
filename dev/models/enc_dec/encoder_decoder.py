@@ -15,6 +15,36 @@ from helpers.model_helper import *
 import csv
 
 
+class Encoder(nn.Module):
+    def __init__(self, input_size, hidden_dim, num_lstms):
+        super(Encoder, self).__init__()
+        self.hidden_size = hidden_dim
+        self.input_size = input_size
+
+        self.lstm = nn.LSTM(input_size, hidden_dim, num_lstms)
+        self.linear = nn.Sequential(
+            nn.Linear(self.input_size, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(hidden_dim, self.input_size),
+            nn.ReLU()
+        )
+
+    def forward(self, input, hidden):
+        input = self.linear(input)
+        output, hidden = self.lstm(input, hidden)
+        return output, hidden
+
+class Decoder(nn.module):
+    def __init__(self, input_size, hidden_dim, use_attention):
+        super(Decoder, self).__init__()
+
 
 class EncoderDecoder(nn.Module):
     '''
