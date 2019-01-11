@@ -106,9 +106,9 @@ class EncoderDecoder(nn.Module):
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
         self.num_lstms = num_lstms
-        self.encoder = Encoder(LSTM_in_size, hidden_dim, self.num_lstsms)
-        self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, self.num_lstms)
-        self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, self.num_lstms)
+        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstsms)
+        self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, num_lstms)
+        self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, num_lstms)
 
         # Non-torch inits.
         self.use_gpu = use_gpu
