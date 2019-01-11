@@ -24,7 +24,7 @@ num_lstms = 1
 # How to normalize the data. Can be 'clr' or 'zscore', or a list of either.
 norm_method = ['clr', 'zscore']
 # Where to save the model's results.
-output_dir = 'enc_dec_output'
+output_dir = '2019_enc_dec_output'
 
 # Early stopping stuff
 use_early_stopping = True
