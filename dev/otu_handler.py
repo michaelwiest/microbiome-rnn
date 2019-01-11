@@ -35,11 +35,9 @@ class OTUHandler(object):
         self.raw_samples = copy.deepcopy(self.samples)
         self.strains = list(self.samples[0].index.values)
         self.num_strains = len(self.strains)
+        # These get set when calling set_train_val
         self.train_data = None
         self.val_data = None
-        self.normalization_method = None
-        self.normalization_factors = {}
-
 
     def set_train_val(self, percent=0.8, minsize=20):
         '''
@@ -60,6 +58,7 @@ class OTUHandler(object):
                 temp_sizes.append(sample.iloc[:, index:].shape[1])
 
             else:
+                print('Skipping file, {}, because it\'s of shape: {}'.format(i, sample.shape))
                 self.train_data.append(sample)
                 temp_sizes.append(sample.shape[1])
 
@@ -68,35 +67,21 @@ class OTUHandler(object):
 
     def normalize_data(self, method='zscore'):
         '''
-        Method for normalizing the input data. it also keeps track of the
-        relevant parameters used for normalization so that they can be
-        returned to their raw values for transformation of the predicted data.
+        Method for normalizing the input data.
         '''
         method = method.lower()
         if method not in ['zscore', 'clr']:
             raise ValueError('Specify "zscore" or "clr" for method')
         if method == 'zscore':
-            self.normalization_method = 'zscore'
             m = zscore
-            means = np.mean
-            std = np.std
         else:
-            self.normalization_method = 'clr'
             m = clr
-            means = gmean
-            std = None
+
         new_vals = []
-        self.normalization_factors[method] = {'mean': [],
-                                              'std': []}
         for i, which_data in enumerate([self.samples, self.test_data]):
             if which_data is not None:
                 new_vals = []
                 for s in which_data:
-                    self.normalization_factors[method]['mean'].append(means(s.values,
-                                                                            axis=0))
-                    if std is not None:
-                        self.normalization_factors[method]['std'].append(std(s.values,
-                                                                             axis=0))
                     new_vals.append(pd.DataFrame(m(s.values, axis=0),
                                                  index=s.index,
                                                  columns=s.columns))
@@ -105,41 +90,6 @@ class OTUHandler(object):
                     self.samples = new_vals
                 elif i == 1:
                     self.test_data = new_vals
-                # Reassign the train and test values given the normalization.
-        self.set_train_val()
-
-
-    def un_normalize_data(self, new_data,
-                          sample_index,
-                          sample_timepoint_range):
-        '''
-        THIS DOESN'T REALLY WORK AND SHOULDN'T BE CALLED.
-
-        Function for returning the normalized values to the raw values.
-        This is good for plotting the predicted values versus actual values.
-        sample_timepoint_range: tuple or list of: (start_index, end_index).
-        '''
-
-        if (type(sample_timepoint_range) not in [list, tuple] or
-            sample_timepoint_range[1] <= sample_timepoint_range[0]):
-            raise ValueError('Please make the values fo the time range in '
-                             'increasing order and a list or tuple.')
-
-
-        means = np.array(self.normalization_factors[self.normalization_method]['mean'][sample_index])
-        std = np.array(self.normalization_factors[self.normalization_method]['std'][sample_index])
-
-        # Get the means and standard deviations of the input data over that
-        # range and average it. These are used to "unnormalize" the input.
-        means = np.mean(means[sample_timepoint_range[0]:
-                              sample_timepoint_range[1]])
-        std = np.mean(std[sample_timepoint_range[0]:
-                          sample_timepoint_range[1]])
-        if self.normalization_method == 'zscore':
-            return new_data * std + means
-        else:
-            return np.exp(new_data) * means
-
 
     def get_N_samples_and_targets(self, N, slice_size,
                                   which_data='train', target_slice=True,

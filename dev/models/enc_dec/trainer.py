@@ -41,13 +41,6 @@ files.sort()
 # Generate the data handler object
 otu_handler = OTUHandler(files, test_files)
 
-# Calculate the minimum size that a slice of data can be.
-# This calculates the maximum possible size we can look at over training.
-minsize = int((num_epochs / slice_incr_frequency) + seq_len)
-
-# Set train and validation split
-otu_handler.set_train_val(minsize=minsize)
-
 # Normalize the data.
 if type(norm_method) == list:
     for nm in norm_method:
@@ -55,8 +48,16 @@ if type(norm_method) == list:
 else:
     otu_handler.normalize_data(method=norm_method)
 
-print('Loaded in data. Ready to train.\n')
+# Calculate the minimum size that a slice of data can be.
+# This calculates the maximum possible size we can look at over training.
+minsize = int((num_epochs / slice_incr_frequency) + seq_len)
 
+otu_handler.set_train_val(minsize=minsize)
+
+print('There are {} train files and {} validation files.'.format(len(otu_handler.train_data),
+                                                                len(otu_handler.val_data)))
+
+print('\nLoaded in data. Ready to train.\n')
 use_gpu = torch.cuda.is_available()
 if use_gpu:
     torch.cuda.set_device(gpu_to_use)
