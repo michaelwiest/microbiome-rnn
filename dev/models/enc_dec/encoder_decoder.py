@@ -42,52 +42,17 @@ class Encoder(nn.Module):
         return output, hidden
 
 class Decoder(nn.module):
-    def __init__(self, input_size, hidden_dim, use_attention):
+    def __init__(self, input_size, hidden_dim, num_lstms, use_attention=False):
         super(Decoder, self).__init__()
+        self.use_attention = use_attention
+        if self.use_attention:
+            self.hidden_size = hidden_dim * 2
+        else:
+            self.hidden_size = hidden_dim
+        self.input_size = input_size
 
-
-class EncoderDecoder(nn.Module):
-    '''
-    Model for predicting OTU counts of microbes given historical data.
-    Uses fully connected layers and an LSTM (could use 1d convolutions in the
-    future for better accuracy).
-
-    As of now does not have a "dream" function for generating predictions from a
-    seeded example.
-    '''
-    def __init__(self, hidden_dim, otu_handler,
-                 num_lstms,
-                 use_gpu=False,
-                 LSTM_in_size=None):
-        super(EncoderDecoder, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.otu_handler = otu_handler
-        if LSTM_in_size is None:
-            LSTM_in_size = self.otu_handler.num_strains
-        self.num_lstms = num_lstms
-        self.encoder = nn.LSTM(LSTM_in_size, hidden_dim, self.num_lstms)
-        self.decoder_forward = nn.LSTM(LSTM_in_size, hidden_dim, self.num_lstms)
-        self.decoder_backward = nn.LSTM(LSTM_in_size, hidden_dim, self.num_lstms)
-
-
-        # Compression layers from raw number of inputs to reduced number
-        self.strain_compressor = nn.Sequential(
-            nn.Linear(self.otu_handler.num_strains, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, LSTM_in_size),
-            # nn.BatchNorm1d(self.otu_handler.num_strains)
-            nn.ReLU()
-        )
-
-        # Expansion layers from reduced number to raw number of strains
-        self.after_lstm_forward = nn.Sequential(
+        self.lstm = nn.LSTM(input_size, hidden_dim, num_lstms)
+        self.linear = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             # nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
@@ -112,29 +77,38 @@ class EncoderDecoder(nn.Module):
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.ReLU()
         )
-        self.after_lstm_backward = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(hidden_dim, self.otu_handler.num_strains),
-            # nn.BatchNorm1d(self.otu_handler.num_strains)
-            # nn.Tanh()
-        )
+        self.hidden = None
+
+    def forward(self, input, encoder_output=None, hidden=None):
+        if hidden is None:
+            hidden = self.hidden
+        output, self.hidden = self.lstm(input, hidden)
+        input = self.linear(output)
+        return output
+
+
+class EncoderDecoder(nn.Module):
+    '''
+    Model for predicting OTU counts of microbes given historical data.
+    Uses fully connected layers and an LSTM (could use 1d convolutions in the
+    future for better accuracy).
+
+    As of now does not have a "dream" function for generating predictions from a
+    seeded example.
+    '''
+    def __init__(self, hidden_dim, otu_handler,
+                 num_lstms,
+                 use_gpu=False,
+                 LSTM_in_size=None):
+        super(EncoderDecoder, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.otu_handler = otu_handler
+        if LSTM_in_size is None:
+            LSTM_in_size = self.otu_handler.num_strains
+        self.num_lstms = num_lstms
+        self.encoder = Encoder(LSTM_in_size, hidden_dim, self.num_lstsms)
+        self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, self.num_lstms)
+        self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, self.num_lstms)
 
         # Non-torch inits.
         self.use_gpu = use_gpu
@@ -152,25 +126,19 @@ class EncoderDecoder(nn.Module):
         # data is shape: sequence_size x batch x num_strains
         num_predictions = input_data.size(0)
 
-        d = self.strain_compressor(input_data)
-        _, self.hidden = self.encoder(d, self.hidden)
+        _, self.hidden = self.encoder.forward(input_data, self.hidden)
 
-        forward_hidden = self.hidden
-        backward_hidden = self.hidden
-        # print(self.hidden[0].size())
+        self.decoder_forward.hidden = self.hidden.clone()
+        self.decoder_backward.hidden = self.hidden.clone()
 
         # Get the last input example.
-        forward_inp = d[-1, :, :].unsqueeze(0)
-        backward_inp = d[-1, :, :].unsqueeze(0)
+        forward_inp = input_data[-1, :, :].unsqueeze(0)
+        backward_inp = input_data[-1, :, :].unsqueeze(0)
 
         for i in range(num_predictions):
 
-            forward, forward_hidden = self.decoder_forward(forward_inp,
-                                                           forward_hidden)
-            backward, backward_hidden = self.decoder_backward(backward_inp,
-                                                              backward_hidden)
-            forward = self.after_lstm_forward(forward)
-            backward = self.after_lstm_backward(backward)
+            forward = self.decoder_forward.forward(forward_inp)
+            backward = self.decoder_backward.forward(backward_inp)
 
             # Add our prediction to the list of predictions.
             if i == 0:
