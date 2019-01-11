@@ -119,17 +119,18 @@ class EncoderDecoder(nn.Module):
         self.best_loss = np.inf
 
 
-    def forward(self, input_data, teacher_data=None):
+    def forward(self, input_data, teacher_data=None, bypass_encoder=False):
         # Teacher data should be a tuple of length two where the first value
         # is the data corresponding to the future prediction and the
         # second value is the data corresponding to the reversed input.
         # data is shape: sequence_size x batch x num_strains
         num_predictions = input_data.size(0)
 
-        _, self.hidden = self.encoder.forward(input_data, self.hidden)
+        if not bypass_encoder:
+            _, self.hidden = self.encoder.forward(input_data, self.hidden)
 
-        self.decoder_forward.hidden = self.hidden
-        self.decoder_backward.hidden = self.hidden
+            self.decoder_forward.hidden = self.hidden
+            self.decoder_backward.hidden = self.hidden
 
         # Get the last input example.
         forward_inp = input_data[-1, :, :].unsqueeze(0)
@@ -415,7 +416,8 @@ class EncoderDecoder(nn.Module):
             if stop_early and use_early_stopping:
                 break
 
-    def daydream(self, primer, predict_len=100, window_size=20):
+    def daydream(self, primer, predict_len=100, window_size=20,
+                 bypass_encoder=True):
         '''
         Function for letting the Encoder Decoder "dream" up new data.
         Given a primer it will generate examples for as long as specified.
@@ -441,7 +443,7 @@ class EncoderDecoder(nn.Module):
             inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
             # Only keep the last predicted value.
-            output, _ = self.forward(inp)
+            output, _ = self.forward(inp, bypass_encoder=bypass_encoder)
             output = output[:, :, -1].transpose(0, 1).data
             if self.use_gpu:
                 output = output.cpu().numpy()
