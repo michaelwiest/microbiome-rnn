@@ -73,7 +73,7 @@ class Decoder(nn.Module):
             # nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(hidden_dim, self.otu_handler.num_strains),
+            nn.Linear(hidden_dim, self.input_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.ReLU()
         )
@@ -83,7 +83,7 @@ class Decoder(nn.Module):
         if hidden is None:
             hidden = self.hidden
         output, self.hidden = self.lstm(input, hidden)
-        input = self.linear(output)
+        output = self.linear(output)
         return output
 
 
@@ -106,7 +106,7 @@ class EncoderDecoder(nn.Module):
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
         self.num_lstms = num_lstms
-        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstsms)
+        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms)
         self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, num_lstms)
         self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, num_lstms)
 
@@ -128,15 +128,14 @@ class EncoderDecoder(nn.Module):
 
         _, self.hidden = self.encoder.forward(input_data, self.hidden)
 
-        self.decoder_forward.hidden = self.hidden.clone()
-        self.decoder_backward.hidden = self.hidden.clone()
+        self.decoder_forward.hidden = self.hidden
+        self.decoder_backward.hidden = self.hidden
 
         # Get the last input example.
         forward_inp = input_data[-1, :, :].unsqueeze(0)
         backward_inp = input_data[-1, :, :].unsqueeze(0)
 
         for i in range(num_predictions):
-
             forward = self.decoder_forward.forward(forward_inp)
             backward = self.decoder_backward.forward(backward_inp)
 
