@@ -41,7 +41,7 @@ class Encoder(nn.Module):
         output, hidden = self.lstm(input, hidden)
         return output, hidden
 
-class Decoder(nn.module):
+class Decoder(nn.Module):
     def __init__(self, input_size, hidden_dim, num_lstms, use_attention=False):
         super(Decoder, self).__init__()
         self.use_attention = use_attention
