@@ -317,8 +317,10 @@ class EncoderDecoder(nn.Module):
 
         loss_function = nn.MSELoss()
         # TODO: Try Adagrad & RMSProp
-        optimizer = optim.Adam(self.parameters(), lr=lr,
-                               weight_decay=weight_decay)
+        f_optimizer = optim.Adam(self.parameters(), lr=lr / 2.0,
+                                 weight_decay=weight_decay)
+        b_optimizer = optim.Adam(self.parameters(), lr=lr,
+                                 weight_decay=weight_decay)
 
         # For logging the data for plotting
 
@@ -337,7 +339,7 @@ class EncoderDecoder(nn.Module):
             # decides how many examples to do before increasing the length
             # of the slice of data fed to the LSTM.
             for iterate in range(int(samples_per_epoch / self.batch_size)):
-                self.train() # Put the network in training mode.
+                self.train()  # Put the network in training mode.
 
                 # Select a random sample from the data handler.
                 data, forward_targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
@@ -356,7 +358,8 @@ class EncoderDecoder(nn.Module):
                                                        requires_grad=False)
                 backward_targets = add_cuda_to_variable(backward_targets, self.use_gpu,
                                                         requires_grad=False)
-                self.zero_grad()
+                f_optimizer.zero_grad()
+                b_optimizer.zero_grad()
 
                 # Also, we need to clear out the hidden state of the LSTM,
                 # detaching it from its history on the last instance.
@@ -378,7 +381,10 @@ class EncoderDecoder(nn.Module):
                 bloss = loss_function(backward_preds, backward_targets)
                 loss = floss + bloss
                 loss.backward()
-                optimizer.step()
+                # floss.backward()
+                # bloss.backward()
+                f_optimizer.step()
+                b_optimizer.step()
                 iterate += 1
 
             print('Completed Epoch ' + str(epoch))
