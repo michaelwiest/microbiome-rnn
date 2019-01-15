@@ -19,10 +19,11 @@ class Encoder(nn.Module):
     '''
     Encoder Object.
     '''
-    def __init__(self, input_size, hidden_dim, num_lstms):
+    def __init__(self, input_size, hidden_dim, num_lstms, use_gpu):
         super(Encoder, self).__init__()
         self.hidden_size = hidden_dim
         self.input_size = input_size
+        self.use_gpu = use_gpu
 
         self.lstm = nn.LSTM(input_size, hidden_dim, num_lstms)
         self.linear = nn.Sequential(
@@ -49,12 +50,16 @@ class Decoder(nn.Module):
     Decoder object. It can variably use attention tools.
     Attention mechanism taken from the pytorch tutorial.
     '''
-    def __init__(self, enc_dec, input_size, hidden_dim, num_lstms,
+    def __init__(self,
+                 input_size,
+                 hidden_dim,
+                 num_lstms,
                  max_len,
+                 use_gpu,
                  use_attention=False):
         super(Decoder, self).__init__()
         self.max_len = max_len
-        self.enc_dec = enc_dec
+        self.use_gpu = use_gpu
         self.hidden_dim = hidden_dim
         self.use_attention = use_attention
         self.input_size = input_size
@@ -103,7 +108,7 @@ class Decoder(nn.Module):
                 to_cat = add_cuda_to_variable(torch.zeros(self.max_len - encoder_output.size()[0],
                                                            encoder_output.size()[1],
                                                            encoder_output.size()[2]),
-                                                           self.enc_dec.use_gpu)
+                                                           self.use_gpu)
                 encoder_output = torch.cat((to_cat, encoder_output), 0)
             embedded = self.embedder(input)
             attn_weights = F.softmax(
@@ -138,11 +143,13 @@ class EncoderDecoder(nn.Module):
             LSTM_in_size = self.otu_handler.num_strains
         self.num_lstms = num_lstms
         self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms)
-        self.decoder_forward = Decoder(self, LSTM_in_size, hidden_dim, num_lstms,
+        self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, num_lstms,
                                        max_len=self.otu_handler.min_len,
+                                       use_gpu=self.use_gpu,
                                        use_attention=use_attention)
-        self.decoder_backward = Decoder(self, LSTM_in_size, hidden_dim, num_lstms,
+        self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, num_lstms,
                                         max_len=self.otu_handler.min_len,
+                                        use_gpu=self.use_gpu,
                                         use_attention=use_attention)
 
         # Non-torch inits.
