@@ -417,7 +417,7 @@ class EncoderDecoder(nn.Module):
                 break
 
     def daydream(self, primer, predict_len=100, window_size=20,
-                 bypass_encoder=True):
+                 bypass_encoder=True, batch=False):
         '''
         Function for letting the Encoder Decoder "dream" up new data.
         Given a primer it will generate examples for as long as specified.
@@ -431,17 +431,23 @@ class EncoderDecoder(nn.Module):
 
         predicted = primer
 
-        # Prime the model with all the data but the last point.
-        inp = add_cuda_to_variable(predicted[:, :-1],
-                                   self.use_gpu,
-                                   requires_grad=False) \
-            .transpose(0, 2) \
-            .transpose(0, 1)[-window_size:, :, :]
-        _, _ = self.forward(inp)
+        if not batch:
+            # Prime the model with all the data but the last point.
+            inp = add_cuda_to_variable(predicted[:, :-1],
+                                       self.use_gpu,
+                                       requires_grad=False) \
+                .transpose(0, 2) \
+                .transpose(0, 1)[-window_size:, :, :]
+            _, _ = self.forward(inp)
+
         for p in range(predict_len):
 
-            inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
+            if not batch:
+                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
+            else:
+                inp = add_cuda_to_variable(predicted[:, -window_size:, :], self.use_gpu)
             inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
+
             # Only keep the last predicted value.
             output, _ = self.forward(inp, bypass_encoder=bypass_encoder)
             output = output[:, :, -1].transpose(0, 1).data
@@ -454,5 +460,8 @@ class EncoderDecoder(nn.Module):
             output = np.expand_dims(output, 1)
             # Add the new value to the values to be passed to the LSTM.
             predicted = np.concatenate((predicted, output), axis=1)
+
+            if batch:
+                self.__init_hidden()
 
         return predicted
