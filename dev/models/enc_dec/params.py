@@ -18,6 +18,9 @@ slice_incr_frequency = 2
 # What percentage of the time to use teacher forcing during training
 teacher_force_frac = 0.5
 
+# Whether or not to use attention when using the decoder.
+use_attention = True
+
 # How many stacked LSTMs to use?
 num_lstms = 1
 

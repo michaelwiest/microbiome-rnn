@@ -73,7 +73,8 @@ rnn = EncoderDecoder(hidden_dim,
                      otu_handler,
                      num_lstms,
                      use_gpu,
-                     LSTM_in_size=reduced_num_strains)
+                     LSTM_in_size=reduced_num_strains,
+                     use_attention=use_attention)
 
 
 rnn.do_training(seq_len, batch_size,
