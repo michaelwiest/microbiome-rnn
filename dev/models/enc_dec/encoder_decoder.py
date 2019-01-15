@@ -139,21 +139,29 @@ class EncoderDecoder(nn.Module):
         super(EncoderDecoder, self).__init__()
         self.hidden_dim = hidden_dim
         self.otu_handler = otu_handler
+        self.use_gpu = use_gpu
+
+        # Essentially how many OTUs to pass to the LSTMs.
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
+
         self.num_lstms = num_lstms
-        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms)
-        self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, num_lstms,
-                                       max_len=self.otu_handler.min_len,
-                                       use_gpu=self.use_gpu,
+        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms, self.use_gpu)
+        self.decoder_forward = Decoder(LSTM_in_size,
+                                       hidden_dim,
+                                       num_lstms,
+                                       self.otu_handler.min_len,
+                                       self.use_gpu,
                                        use_attention=use_attention)
-        self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, num_lstms,
-                                        max_len=self.otu_handler.min_len,
-                                        use_gpu=self.use_gpu,
+        self.decoder_backward = Decoder(LSTM_in_size,
+                                        hidden_dim,
+                                        num_lstms,
+                                        self.otu_handler.min_len,
+                                        self.use_gpu,
                                         use_attention=use_attention)
 
         # Non-torch inits.
-        self.use_gpu = use_gpu
+
         self.hidden = None
 
         self.best_model = self.state_dict()
