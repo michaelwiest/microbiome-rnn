@@ -44,6 +44,9 @@ class OTUHandler(object):
         Set the training and validation data for each sample. Can include
         a lower bound on size of train/validation
         '''
+        # For keeping track of max size the slice can be.
+        self.min_len = minsize
+        # To be populated.
         self.train_data = []
         self.val_data = []
         temp_sizes = []
@@ -61,9 +64,6 @@ class OTUHandler(object):
                 print('Skipping file, {}, because it\'s of shape: {}'.format(i, sample.shape))
                 self.train_data.append(sample)
                 temp_sizes.append(sample.shape[1])
-
-        # For keeping track of max size the slice can be.
-        self.min_len = min(temp_sizes)
 
     def normalize_data(self, method='zscore'):
         '''
