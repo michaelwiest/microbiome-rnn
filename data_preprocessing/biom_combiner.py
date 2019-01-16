@@ -19,7 +19,7 @@ args = parser.parse_args()
 indir = args.input
 outname = args.output
 
-biom_file_names = [os.path.join(indir, f) for f in os.listdir(indir)]
+biom_file_names = [os.path.join(indir, f) for f in os.listdir(indir) if f.endswith('.biom')]
 biom_files = [load_table(f) for f in biom_file_names]
 
 # Combine them all together.
