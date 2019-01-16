@@ -51,7 +51,7 @@ else:
 # Calculate the minimum size that a slice of data can be.
 # This calculates the maximum possible size we can look at over training.
 if slice_incr_frequency is None:
-    minsize = seq_len
+    minsize = 2 * seq_len
 else:
     minsize = 2 * int((num_epochs / slice_incr_frequency) + seq_len)
 
