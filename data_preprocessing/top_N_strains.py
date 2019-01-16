@@ -67,8 +67,6 @@ def main():
     for i in range(len(otu_dfs)):
         otu_dfs[i] = otu_dfs[i].reindex(strains)
 
-        # Rename the columns so that they're just integers.
-        otu_dfs[i].columns = list(range(otu_dfs[i].shape[1]))
         # Take a rolling mean of the values (helps to smooth). Big improvements
         # in the model.
         if rolling_window is not None:

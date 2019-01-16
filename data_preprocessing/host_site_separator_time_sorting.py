@@ -111,9 +111,10 @@ for j, table in enumerate(output_tables):
                                          errors='coerce')
         to_save.dropna(subset=['date'], inplace=True)
         to_save.sort_values(by=['date'], inplace=True)
-        to_save.columns = to_save['date']
+        dates = to_save['date']
         to_save.drop(['date'], axis=1, inplace=True)
         to_save = to_save.T
+        to_save.columns = dates
         print(to_save.shape)
         output_fname = output_fnames[j] + '_sorted_tax.csv'
         print(output_fname)
