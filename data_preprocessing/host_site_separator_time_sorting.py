@@ -18,7 +18,7 @@ def merge_dicts(*dict_args):
     Given any number of dicts, shallow copy and merge into a new dict,
     precedence goes to key value pairs in latter dicts. This file only
     takes one biom file at a time becuase there is a chance of naming
-    collisions with doing multiple files. 
+    collisions with doing multiple files.
     """
     result = {}
     for dictionary in dict_args:
@@ -111,8 +111,10 @@ for j, table in enumerate(output_tables):
                                          errors='coerce')
         to_save.dropna(subset=['date'], inplace=True)
         to_save.sort_values(by=['date'], inplace=True)
+        dates = to_save['date']
         to_save.drop(['date'], axis=1, inplace=True)
         to_save = to_save.T
+        to_save.columns = dates
         print(to_save.shape)
         output_fname = output_fnames[j] + '_sorted_tax.csv'
         print(output_fname)
