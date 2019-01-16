@@ -16,10 +16,14 @@ import csv
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, hidden_dim, num_lstms):
+    '''
+    Encoder Object.
+    '''
+    def __init__(self, input_size, hidden_dim, num_lstms, use_gpu):
         super(Encoder, self).__init__()
         self.hidden_size = hidden_dim
         self.input_size = input_size
+        self.use_gpu = use_gpu
 
         self.lstm = nn.LSTM(input_size, hidden_dim, num_lstms)
         self.linear = nn.Sequential(
@@ -42,46 +46,80 @@ class Encoder(nn.Module):
         return output, hidden
 
 class Decoder(nn.Module):
-    def __init__(self, input_size, hidden_dim, num_lstms, use_attention=False):
+    '''
+    Decoder object. It can variably use attention tools.
+    Attention mechanism taken from the pytorch tutorial.
+    '''
+    def __init__(self,
+                 input_size,
+                 hidden_dim,
+                 num_lstms,
+                 max_len,
+                 use_gpu,
+                 use_attention=False):
         super(Decoder, self).__init__()
+        self.max_len = max_len
+        self.use_gpu = use_gpu
+        self.hidden_dim = hidden_dim
         self.use_attention = use_attention
-        if self.use_attention:
-            self.hidden_size = hidden_dim * 2
-        else:
-            self.hidden_size = hidden_dim
         self.input_size = input_size
 
         self.lstm = nn.LSTM(input_size, hidden_dim, num_lstms)
         self.linear = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.05),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            # nn.BatchNorm1d(self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
-            nn.Linear(hidden_dim, hidden_dim),
-            # nn.BatchNorm1d(hidden_dim),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
-            nn.Linear(hidden_dim, self.input_size),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            # nn.BatchNorm1d(self.hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.05),
+            nn.Linear(self.hidden_dim, self.input_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.ReLU()
         )
+
+        if use_attention:
+            self.attn = nn.Linear(self.hidden_dim * 2,
+                                  self.max_len)
+            self.attn_combine = nn.Linear(self.hidden_dim * 2,
+                                          self.input_size)
+            self.embedder = nn.Linear(self.input_size, self.hidden_dim)
         self.hidden = None
 
     def forward(self, input, encoder_output=None, hidden=None):
         if hidden is None:
             hidden = self.hidden
+
+        if self.use_attention:
+            if not encoder_output.size()[0] == self.max_len:
+                to_cat = add_cuda_to_variable(torch.zeros(self.max_len - encoder_output.size()[0],
+                                                           encoder_output.size()[1],
+                                                           encoder_output.size()[2]),
+                                                           self.use_gpu)
+                encoder_output = torch.cat((to_cat, encoder_output), 0)
+            embedded = self.embedder(input)
+            attn_weights = F.softmax(
+                self.attn(torch.cat((embedded[0], hidden[0][0]), 1)),
+                dim=1).unsqueeze(1)
+            attn_applied = torch.bmm(attn_weights,
+                                     encoder_output.transpose(0, 1)
+                                     ).transpose(0, 1)
+            output = torch.cat((embedded[0], attn_applied[0]), 1)
+            input = self.attn_combine(output).unsqueeze(0)
+
         output, self.hidden = self.lstm(input, hidden)
         output = self.linear(output)
         return output
@@ -92,26 +130,38 @@ class EncoderDecoder(nn.Module):
     Model for predicting OTU counts of microbes given historical data.
     Uses fully connected layers and an LSTM (could use 1d convolutions in the
     future for better accuracy).
-
-    As of now does not have a "dream" function for generating predictions from a
-    seeded example.
     '''
     def __init__(self, hidden_dim, otu_handler,
                  num_lstms,
                  use_gpu=False,
-                 LSTM_in_size=None):
+                 LSTM_in_size=None,
+                 use_attention=True):
         super(EncoderDecoder, self).__init__()
         self.hidden_dim = hidden_dim
         self.otu_handler = otu_handler
+        self.use_gpu = use_gpu
+
+        # Essentially how many OTUs to pass to the LSTMs.
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
+
         self.num_lstms = num_lstms
-        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms)
-        self.decoder_forward = Decoder(LSTM_in_size, hidden_dim, num_lstms)
-        self.decoder_backward = Decoder(LSTM_in_size, hidden_dim, num_lstms)
+        self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms, self.use_gpu)
+        self.decoder_forward = Decoder(LSTM_in_size,
+                                       hidden_dim,
+                                       num_lstms,
+                                       self.otu_handler.min_len,
+                                       self.use_gpu,
+                                       use_attention=use_attention)
+        self.decoder_backward = Decoder(LSTM_in_size,
+                                        hidden_dim,
+                                        num_lstms,
+                                        self.otu_handler.min_len,
+                                        self.use_gpu,
+                                        use_attention=use_attention)
 
         # Non-torch inits.
-        self.use_gpu = use_gpu
+
         self.hidden = None
 
         self.best_model = self.state_dict()
@@ -127,7 +177,7 @@ class EncoderDecoder(nn.Module):
         num_predictions = input_data.size(0)
 
         if not bypass_encoder:
-            _, self.hidden = self.encoder.forward(input_data, self.hidden)
+            encoder_output, self.hidden = self.encoder.forward(input_data, self.hidden)
 
             self.decoder_forward.hidden = self.hidden
             self.decoder_backward.hidden = self.hidden
@@ -137,8 +187,10 @@ class EncoderDecoder(nn.Module):
         backward_inp = input_data[-1, :, :].unsqueeze(0)
 
         for i in range(num_predictions):
-            forward = self.decoder_forward.forward(forward_inp)
-            backward = self.decoder_backward.forward(backward_inp)
+            forward = self.decoder_forward.forward(forward_inp,
+                                                   encoder_output=encoder_output)
+            backward = self.decoder_backward.forward(backward_inp,
+                                                     encoder_output=encoder_output)
 
             # Add our prediction to the list of predictions.
             if i == 0:
