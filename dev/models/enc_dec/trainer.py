@@ -50,10 +50,12 @@ else:
 
 # Calculate the minimum size that a slice of data can be.
 # This calculates the maximum possible size we can look at over training.
-if slice_incr_frequency is None:
-    minsize = 2 * seq_len
+if inp_slice_incr_frequency is None and target_slice_incr_frequency is None:
+    minsize = max(inp_seq_len, target_seq_len)
 else:
-    minsize = 2 * int((num_epochs / slice_incr_frequency) + seq_len)
+    minsize = int((num_epochs / max(inp_slice_incr_frequency,
+                                    target_slice_incr_frequency)) +
+                      max(inp_slice_len, target_slice_len))
 
 otu_handler.set_train_val(minsize=minsize)
 
@@ -80,7 +82,9 @@ rnn = EncoderDecoder(hidden_dim,
                      use_attention=use_attention)
 
 
-rnn.do_training(seq_len, batch_size,
+rnn.do_training(inp_slice_len,
+                target_seq_len,
+                batch_size,
                 num_epochs,
                 learning_rate,
                 samples_per_epoch,

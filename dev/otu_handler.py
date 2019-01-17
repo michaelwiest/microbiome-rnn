@@ -53,8 +53,8 @@ class OTUHandler(object):
         for i, sample in enumerate(self.samples):
             index = int(percent * sample.shape[1])
             # If not enough examples, skip this file.
-            if not ((sample.iloc[:, :index].shape[1]) < minsize or
-                    (sample.iloc[:, index:].shape[1]) < minsize):
+            if not ((sample.iloc[:, :index].shape[1]) < minsize * 2 or
+                    (sample.iloc[:, index:].shape[1]) < minsize * 2):
                 self.train_data.append(sample.iloc[:, :index])
                 self.val_data.append(sample.iloc[:, index:])
                 temp_sizes.append(sample.iloc[:, :index].shape[1])
@@ -91,11 +91,13 @@ class OTUHandler(object):
                 elif i == 1:
                     self.test_data = new_vals
 
-    def get_N_samples_and_targets(self, N, slice_size,
-                                  which_data='train', target_slice=True,
+    def get_N_samples_and_targets(self, N, input_slice_size,
+                                  target_slice_size,
+                                  which_data='train',
+                                  target_slice=True,
                                   slice_offset=1):
         '''
-        Returns data of shape N x num_organisms x slice_size. Selects N random
+        Returns data of shape N x num_organisms x input_slice_size. Selects N random
         examples from all possible training samples. It selects from them evenly
         at the moment, but this can be tweaked to select more often from larger
         samples.
@@ -133,17 +135,17 @@ class OTUHandler(object):
 
             # Pick a random starting point in the example. Get the data in
             # that slice and then the values immediately after.
-            start_index = np.random.randint(sample.shape[1] - slice_size - slice_offset)
-            data = sample.iloc[:, start_index: start_index + slice_size].values
+            start_index = np.random.randint(sample.shape[1] - input_slice_size - target_slice_size)
+            data = sample.iloc[:, start_index: start_index + input_slice_size].values
 
             # For the LSTM we want a whole slice of values to compare against.
             # Not just a single target like in the FFN.
             # Now this just increments the input by one position for the target.
             if not target_slice:
-                target = sample.iloc[:, start_index + slice_size].values
+                target = sample.iloc[:, start_index + input_slice_size].values
             else:
                 target = sample.iloc[:, start_index + slice_offset:
-                                        start_index + slice_size + slice_offset].values
+                                        start_index + target_slice_size + slice_offset].values
             # Store all the values
             samples.append(data)
             targets.append(target)

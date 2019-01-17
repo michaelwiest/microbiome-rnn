@@ -169,12 +169,12 @@ class EncoderDecoder(nn.Module):
         self.best_loss = np.inf
 
 
-    def forward(self, input_data, teacher_data=None, bypass_encoder=False):
+    def forward(self, input_data, num_predictions,
+                teacher_data=None, bypass_encoder=False):
         # Teacher data should be a tuple of length two where the first value
         # is the data corresponding to the future prediction and the
         # second value is the data corresponding to the reversed input.
         # data is shape: sequence_size x batch x num_strains
-        num_predictions = input_data.size(0)
 
         if not bypass_encoder:
             encoder_output, self.hidden = self.encoder.forward(input_data, self.hidden)
@@ -256,7 +256,10 @@ class EncoderDecoder(nn.Module):
                                                 self.batch_size,
                                                 self.hidden_dim))
                            )
-    def get_intermediate_losses(self, loss_function, slice_len,
+    def get_intermediate_losses(self,
+                                loss_function,
+                                inp_slice_len,
+                                target_slice_len,
                                 teacher_force_frac,
                                 num_batches=10):
         '''
@@ -277,8 +280,9 @@ class EncoderDecoder(nn.Module):
             for b in range(num_batches):
                 # Select a random sample from the data handler.
                 data, forward_targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                                   slice_len,
-                                                                                   slice_offset=slice_len,
+                                                                                   inp_slice_len,
+                                                                                   target_slice_len,
+                                                                                   slice_offset=inp_slice_len,
                                                                                    which_data=which_sample)
                 # this is the data that the backward decoder will reconstruct
                 backward_targets = np.flip(data, axis=2).copy()
@@ -304,6 +308,7 @@ class EncoderDecoder(nn.Module):
                     tf = None
                 # Do a forward pass of the model.
                 forward_preds, backward_preds = self.forward(data,
+                                                             target_slice_len,
                                                              teacher_data=tf)
 
                 # We want to get the loss on a per-strain basis.
@@ -348,14 +353,16 @@ class EncoderDecoder(nn.Module):
 
 
     def do_training(self,
-                    slice_len,
+                    inp_slice_len,
+                    target_slice_len,
                     batch_size,
                     epochs,
                     lr,
                     samples_per_epoch,
                     teacher_force_frac,
                     weight_decay,
-                    slice_incr_frequency=None,
+                    inp_slice_incr_frequency=None,
+                    target_slice_incr_frequency=None,
                     save_params=None,
                     use_early_stopping=True,
                     early_stopping_patience=10):
@@ -372,11 +379,9 @@ class EncoderDecoder(nn.Module):
         optimizer = optim.Adam(self.parameters(), lr=lr,
                                weight_decay=weight_decay)
 
-        # For logging the data for plotting
-
-
         # Get some initial losses.
-        losses = self.get_intermediate_losses(loss_function, slice_len,
+        losses = self.get_intermediate_losses(loss_function, inp_slice_len,
+                                              target_slice_len,
                                               teacher_force_frac)
 
         self.loss_tensor = None
@@ -393,8 +398,10 @@ class EncoderDecoder(nn.Module):
 
                 # Select a random sample from the data handler.
                 data, forward_targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
-                                                                           slice_len,
-                                                                           slice_offset=slice_len)
+                                                                           inp_slice_len,
+                                                                           target_slice_len,
+                                                                           slice_offset=inp_slice_len
+                                                                           )
 
                 # this is the data that the backward decoder will reconstruct
                 backward_targets = np.flip(data, axis=2).copy()
@@ -421,6 +428,7 @@ class EncoderDecoder(nn.Module):
                     tf = None
                 # Do a forward pass of the model.
                 forward_preds, backward_preds = self.forward(data,
+                                                             target_slice_len,
                                                              teacher_data=tf)
 
                 # For this round set our loss to zero and then compare
@@ -437,21 +445,34 @@ class EncoderDecoder(nn.Module):
 
             # Get some train and val losses. These can be used for early
             # stopping later on.
-            losses = self.get_intermediate_losses(loss_function, slice_len,
+            losses = self.get_intermediate_losses(loss_function,
+                                                  inp_slice_len,
+                                                  target_slice_len,
                                                   teacher_force_frac)
             self.__print_and_log_losses(losses, save_params)
 
             # If we want to increase the slice of the data that we are
             # training on then do so.
-            if slice_incr_frequency is not None:
-                if slice_incr_frequency > 0:
-                    if epoch != 0 and epoch % slice_incr_frequency == 0:
-                        slice_len += 1
+            if inp_slice_incr_frequency is not None:
+                if inp_slice_incr_frequency > 0:
+                    if epoch != 0 and epoch % inp_slice_incr_frequency == 0:
+                        inp_slice_len += 1
                         # Make sure that the slice doesn't get longer than the
                         # amount of data we can feed to it. Could handle this with
                         # padding characters.
-                        slice_len = min(self.otu_handler.min_len - 1, int(slice_len))
-                        print('Increased slice length to: {}'.format(slice_len))
+                        inp_slice_len = min(self.otu_handler.min_len - 1, int(inp_slice_len))
+                        print('Increased slice length to: {}'.format(inp_slice_len))
+
+            if target_slice_incr_frequency is not None:
+                if target_slice_incr_frequency > 0:
+                    if epoch != 0 and epoch % target_slice_incr_frequency == 0:
+                        target_slice_len += 1
+                        # Make sure that the slice doesn't get longer than the
+                        # amount of data we can feed to it. Could handle this with
+                        # padding characters.
+                        target_slice_len = min(self.otu_handler.min_len - 1, int(target_slice_len))
+                        print('Increased slice length to: {}'.format(target_slice_len))
+
 
             if use_early_stopping:
                 stop_early = self.__evaluate_early_stopping(epoch,
@@ -502,7 +523,10 @@ class EncoderDecoder(nn.Module):
 
             # Only keep the last predicted value.
             output, _ = self.forward(inp, bypass_encoder=bypass_encoder)
-            output = output[:, :, -1].transpose(0, 1).data
+            if batch:
+                output = output[:, :, 0].transpose(0, 1).data
+            else:
+                output = output[:, :, -1].transpose(0, 1).data
             if self.use_gpu:
                 output = output.cpu().numpy()
             else:
