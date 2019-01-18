@@ -79,6 +79,7 @@ def main():
     for f in files:
         raw = load_data_and_sort(os.path.join(input_dir, f))
         otu_dfs.append(complete_and_multiindex_df(raw, depth=level))
+        print('Loaded: {}'.format(f))
     print('Finished loading data')
 
     for i, df in enumerate(otu_dfs):
