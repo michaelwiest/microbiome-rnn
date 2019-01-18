@@ -185,7 +185,6 @@ class EncoderDecoder(nn.Module):
         # Get the last input example.
         forward_inp = input_data[-1, :, :].unsqueeze(0)
         backward_inp = input_data[-1, :, :].unsqueeze(0)
-
         for i in range(num_predictions):
             forward = self.decoder_forward.forward(forward_inp,
                                                    encoder_output=encoder_output)
@@ -211,7 +210,7 @@ class EncoderDecoder(nn.Module):
                 forward_inp = teacher_data[0][i, :, :].unsqueeze(0)
                 backward_inp = teacher_data[0][i, :, :].unsqueeze(0)
 
-        return forward_pred.transpose(1, 2).transpose(0, 2), backward_pred.transpose(1, 2).transpose(0, 2)
+        return forward_pred.transpose(1, 2).transpose(0, 2), backward_pred.transpose(1, 2).transpose(0, 2)[:, :, :input_data.size()[0]]
 
     def __evaluate_early_stopping(self,
                                 current_epoch,
@@ -461,7 +460,7 @@ class EncoderDecoder(nn.Module):
                         # amount of data we can feed to it. Could handle this with
                         # padding characters.
                         inp_slice_len = min(self.otu_handler.min_len - 1, int(inp_slice_len))
-                        print('Increased slice length to: {}'.format(inp_slice_len))
+                        print('Increased input slice length to: {}'.format(inp_slice_len))
 
             if target_slice_incr_frequency is not None:
                 if target_slice_incr_frequency > 0:
@@ -471,7 +470,7 @@ class EncoderDecoder(nn.Module):
                         # amount of data we can feed to it. Could handle this with
                         # padding characters.
                         target_slice_len = min(self.otu_handler.min_len - 1, int(target_slice_len))
-                        print('Increased slice length to: {}'.format(target_slice_len))
+                        print('Increased taret slice length to: {}'.format(target_slice_len))
 
 
             if use_early_stopping:
@@ -492,6 +491,8 @@ class EncoderDecoder(nn.Module):
     def daydream(self, primer, predict_len=100, window_size=20,
                  bypass_encoder=True, batch=False):
         '''
+        DEPRECATED
+
         Function for letting the Encoder Decoder "dream" up new data.
         Given a primer it will generate examples for as long as specified.
         '''
@@ -541,3 +542,25 @@ class EncoderDecoder(nn.Module):
                 self.__init_hidden()
 
         return predicted
+
+    def daydream2(self, primer, predict_len=100):
+        '''
+        This version should be the one used. I'm keeping the older version
+        in case this one doesn't work.
+        '''
+        if len(primer.shape) != 3:
+            raise ValueError('Please provide a 3d array of shape: '
+                             '(num_strains, slice_length, batch_size)')
+        self.batch_size = primer.shape[-1]
+        self.__init_hidden()
+        self.eval()
+
+        predicted = primer
+        inp = add_cuda_to_variable(primer, self.use_gpu).transpose(0, 2).transpose(0, 1)
+        output, _ = self.forward(inp, predict_len)
+        output = output.transpose(0, 1)
+        if self.use_gpu:
+            output = output.cpu().numpy()
+        else:
+            output = output.numpy()
+        return output
