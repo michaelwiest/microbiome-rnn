@@ -556,7 +556,7 @@ class EncoderDecoder(nn.Module):
         self.eval()
 
         predicted = primer
-        inp = add_cuda_to_variable(primer, self.use_gpu).transpose(0, 2).transpose(0, 1)
+        inp = add_cuda_to_variable(primer, self.use_gpu, requires_grad=False).transpose(0, 2).transpose(0, 1)
         output, _ = self.forward(inp, predict_len)
         output = output.transpose(0, 1)
         if self.use_gpu:
