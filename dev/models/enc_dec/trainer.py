@@ -5,6 +5,7 @@ import sys
 import pandas as pd
 from params import *
 import argparse
+import numpy as np
 
 
 # add the root directory of the project to the path..
@@ -50,11 +51,18 @@ else:
 
 # Calculate the minimum size that a slice of data can be.
 # This calculates the maximum possible size we can look at over training.
-if slice_incr_frequency is None:
-    minsize = 2 * seq_len
+if inp_slice_incr_frequency is None and target_slice_incr_frequency is None:
+    minsize = max(inp_slice_len, target_slice_len)
 else:
-    minsize = 2 * int((num_epochs / slice_incr_frequency) + seq_len)
+    if inp_slice_incr_frequency is None:
+        inp_slice_incr_frequency = np.inf
+    if target_slice_incr_frequency is None:
+        target_slice_incr_frequency = np.inf
+    minsize = int((num_epochs / min(inp_slice_incr_frequency,
+                                    target_slice_incr_frequency)) +
+                      max(inp_slice_len, target_slice_len))
 
+# Set the train and validation split.
 otu_handler.set_train_val(minsize=minsize)
 
 print('There are {} train files and {} validation files.'.format(len(otu_handler.train_data),
@@ -76,11 +84,13 @@ rnn = EncoderDecoder(hidden_dim,
                      otu_handler,
                      num_lstms,
                      use_gpu,
-                     LSTM_in_size=reduced_num_strains,
+                     LSTM_in_size=num_strains,
                      use_attention=use_attention)
 
 
-rnn.do_training(seq_len, batch_size,
+rnn.do_training(inp_slice_len,
+                target_slice_len,
+                batch_size,
                 num_epochs,
                 learning_rate,
                 samples_per_epoch,
@@ -89,5 +99,6 @@ rnn.do_training(seq_len, batch_size,
                 save_params=save_params,
                 use_early_stopping=use_early_stopping,
                 early_stopping_patience=early_stopping_patience,
-                slice_incr_frequency=slice_incr_frequency
+                inp_slice_incr_frequency=inp_slice_incr_frequency,
+                target_slice_incr_frequency=target_slice_incr_frequency
                 )
