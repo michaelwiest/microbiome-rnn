@@ -29,15 +29,15 @@ class Encoder(nn.Module):
         self.linear = nn.Sequential(
             nn.Linear(self.input_size, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.01),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
+            nn.Dropout(0.05),
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.ReLU(),
             # nn.Dropout(0.05),
             # nn.Linear(hidden_dim, hidden_dim),
             # nn.ReLU(),
             # # nn.Dropout(0.05),
-            # nn.Linear(hidden_dim, self.input_size),
-            # nn.ReLU()
+            nn.Linear(hidden_dim, self.input_size),
+            nn.ReLU()
         )
 
     def forward(self, input, hidden):
@@ -69,7 +69,7 @@ class Decoder(nn.Module):
             nn.Linear(self.hidden_dim, self.hidden_dim),
             # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.01),
+            nn.Dropout(0.05),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
@@ -85,8 +85,8 @@ class Decoder(nn.Module):
             # nn.Linear(self.hidden_dim, self.hidden_dim),
             # # nn.BatchNorm1d(self.hidden_dim),
             # nn.ReLU(),
-            # # nn.Dropout(0.05),
-            # nn.Linear(self.hidden_dim, self.input_size),
+            # nn.Dropout(0.05),
+            nn.Linear(self.hidden_dim, self.input_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.ReLU()
         )
