@@ -558,9 +558,11 @@ class EncoderDecoder(nn.Module):
         predicted = primer
         inp = add_cuda_to_variable(primer, self.use_gpu, requires_grad=False).transpose(0, 2).transpose(0, 1)
         output, _ = self.forward(inp, predict_len)
-        output = output.transpose(0, 1)
+        output = output.transpose(0, 1).transpose(1, 2)
         if self.use_gpu:
-            output = output.cpu().numpy()
+            output = output.cpu().detach().numpy()
         else:
-            output = output.numpy()
+            output = output.detach().numpy()
+
+        output = np.concatenate((primer, output), axis=1)
         return output
