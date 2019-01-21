@@ -30,11 +30,11 @@ class Encoder(nn.Module):
             nn.Linear(self.input_size, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             # nn.Dropout(0.05),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             # # nn.Dropout(0.05),
             nn.Linear(hidden_dim, self.input_size),
             nn.ReLU()
@@ -75,12 +75,12 @@ class Decoder(nn.Module):
             nn.Linear(self.hidden_dim, self.hidden_dim),
             # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
-            # nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
             # # nn.Dropout(0.05),
-            # nn.Linear(self.hidden_dim, self.hidden_dim),
-            # # nn.BatchNorm1d(self.hidden_dim),
-            # nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            # nn.BatchNorm1d(self.hidden_dim),
+            nn.ReLU(),
             # # nn.Dropout(0.05),
             # nn.Linear(self.hidden_dim, self.hidden_dim),
             # # nn.BatchNorm1d(self.hidden_dim),
@@ -553,7 +553,7 @@ class EncoderDecoder(nn.Module):
                              '(num_strains, slice_length, batch_size)')
         self.batch_size = primer.shape[-1]
         self.__init_hidden()
-        self.eval()
+        # self.eval()
 
         predicted = primer
         inp = add_cuda_to_variable(primer, self.use_gpu, requires_grad=False).transpose(0, 2).transpose(0, 1)
