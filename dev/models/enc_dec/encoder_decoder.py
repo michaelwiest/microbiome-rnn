@@ -470,7 +470,7 @@ class EncoderDecoder(nn.Module):
                         # amount of data we can feed to it. Could handle this with
                         # padding characters.
                         target_slice_len = min(self.otu_handler.min_len - 1, int(target_slice_len))
-                        print('Increased taret slice length to: {}'.format(target_slice_len))
+                        print('Increased target slice length to: {}'.format(target_slice_len))
 
 
             if use_early_stopping:
