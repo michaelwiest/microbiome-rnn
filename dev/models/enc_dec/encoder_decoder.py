@@ -30,12 +30,12 @@ class Encoder(nn.Module):
             nn.Linear(self.input_size, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.05),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.05),
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.ReLU(),
+            # # nn.Dropout(0.05),
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.ReLU(),
+            # # nn.Dropout(0.05),
             nn.Linear(hidden_dim, self.input_size),
             nn.ReLU()
         )
@@ -69,23 +69,23 @@ class Decoder(nn.Module):
             nn.Linear(self.hidden_dim, self.hidden_dim),
             # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
+            nn.Dropout(0.05),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.05),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.05),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.05),
-            nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.05),
+            # nn.Linear(self.hidden_dim, self.hidden_dim),
+            # nn.ReLU(),
+            # # nn.Dropout(0.05),
+            # nn.Linear(self.hidden_dim, self.hidden_dim),
+            # # nn.BatchNorm1d(self.hidden_dim),
+            # nn.ReLU(),
+            # # nn.Dropout(0.05),
+            # nn.Linear(self.hidden_dim, self.hidden_dim),
+            # # nn.BatchNorm1d(self.hidden_dim),
+            # nn.ReLU(),
+            # nn.Dropout(0.05),
             nn.Linear(self.hidden_dim, self.input_size),
             # nn.BatchNorm1d(self.otu_handler.num_strains)
             # nn.ReLU()
@@ -470,7 +470,7 @@ class EncoderDecoder(nn.Module):
                         # amount of data we can feed to it. Could handle this with
                         # padding characters.
                         target_slice_len = min(self.otu_handler.min_len - 1, int(target_slice_len))
-                        print('Increased taret slice length to: {}'.format(target_slice_len))
+                        print('Increased target slice length to: {}'.format(target_slice_len))
 
 
             if use_early_stopping:
@@ -553,7 +553,7 @@ class EncoderDecoder(nn.Module):
                              '(num_strains, slice_length, batch_size)')
         self.batch_size = primer.shape[-1]
         self.__init_hidden()
-        self.eval()
+        # self.eval()
 
         predicted = primer
         inp = add_cuda_to_variable(primer, self.use_gpu, requires_grad=False).transpose(0, 2).transpose(0, 1)
