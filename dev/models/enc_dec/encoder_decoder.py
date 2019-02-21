@@ -275,7 +275,7 @@ class EncoderDecoder(nn.Module):
                 samples = ['train', 'validation', 'test']
             else:
                 samples = ['train', 'validation']
-        elif type(which_samples) == str and which_sample is in ['train', 'validation', 'test']:
+        elif type(which_samples) == str and which_sample in ['train', 'validation', 'test']:
             samples = [which_sample]
 
         strain_losses = np.zeros((len(samples), self.otu_handler.num_strains))
