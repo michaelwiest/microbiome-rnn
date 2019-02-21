@@ -260,7 +260,8 @@ class EncoderDecoder(nn.Module):
                                 inp_slice_len,
                                 target_slice_len,
                                 teacher_force_frac,
-                                num_batches=10):
+                                num_batches=10,
+                                which_donor=None):
         '''
         This generates some scores
         '''
@@ -282,7 +283,8 @@ class EncoderDecoder(nn.Module):
                                                                                    inp_slice_len,
                                                                                    target_slice_len,
                                                                                    slice_offset=inp_slice_len,
-                                                                                   which_data=which_sample)
+                                                                                   which_data=which_sample,
+                                                                                   which_donor=which_donor)
                 # this is the data that the backward decoder will reconstruct
                 backward_targets = np.flip(data, axis=2).copy()
                 # Transpose
