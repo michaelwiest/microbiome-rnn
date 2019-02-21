@@ -95,7 +95,8 @@ class OTUHandler(object):
                                   target_slice_size,
                                   which_data='train',
                                   target_slice=True,
-                                  slice_offset=1):
+                                  slice_offset=1,
+                                  which_donor=None):
         '''
         Returns data of shape N x num_organisms x input_slice_size. Selects N random
         examples from all possible training samples. It selects from them evenly
@@ -122,12 +123,15 @@ class OTUHandler(object):
             raise AttributeError('Please specify train and val data before '
                                  'calling this function.')
 
-        # Samples from data based on number of samples. Ie, samples with more
-        # data points get more selection.
-        all_sizes = [d.shape[1] for d in data_source]
-        probs = [s / (1.0 * sum(all_sizes)) for s in all_sizes]
-        which_samples = np.random.choice(len(data_source), N,
-                                         p=probs)
+        if which_donor is None:
+            # Samples from data based on number of samples. Ie, samples with more
+            # data points get more selection.
+            all_sizes = [d.shape[1] for d in data_source]
+            probs = [s / (1.0 * sum(all_sizes)) for s in all_sizes]
+            which_samples = np.random.choice(len(data_source), N, p=probs)
+        else:
+            # If we know what donor we want then only sample from that one. 
+            which_samples = [which_donor] * N
 
         # Pick a random sample and whether or not it is training or validation.
         for ws in which_samples:
