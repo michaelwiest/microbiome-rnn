@@ -261,17 +261,22 @@ class EncoderDecoder(nn.Module):
                                 target_slice_len,
                                 teacher_force_frac,
                                 num_batches=10,
-                                which_donor=None):
+                                which_donor=None,
+                                which_sample=None # This is a string
+                                ):
         '''
         This generates some scores
         '''
         self.eval()
 
-        # First get some training loss and then a validation loss.
-        if self.otu_handler.test_data is not None:
-            samples = ['train', 'validation', 'test']
-        else:
-            samples = ['train', 'validation']
+        if which_sample is None:
+            # First get some training loss and then a validation loss.
+            if self.otu_handler.test_data is not None:
+                samples = ['train', 'validation', 'test']
+            else:
+                samples = ['train', 'validation']
+        elif type(which_samples) == str and which_sample is in ['train', 'validation', 'test']:
+            samples = [which_sample]
 
         strain_losses = np.zeros((len(samples), self.otu_handler.num_strains))
 
