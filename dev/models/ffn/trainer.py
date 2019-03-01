@@ -21,20 +21,26 @@ parser.add_argument("-d", "--data", type=str,
                     help="The directory of input training data.")
 parser.add_argument("-t", "--test", type=str,
                     help="The directory of excluded test data.")
+parser.add_argument("-g", "--gpu", type=int,
+                    help="GPU index to use.")
 args = parser.parse_args()
 input_dir = args.data
 test_dir = args.test
+gpu_to_use = args.gpu
 
+# Read in our data.
 files = [os.path.join(input_dir, f) for f in os.listdir(input_dir)]
+files.sort()
 if test_dir is not None:
     test_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir)]
+    test_files.sort()
 else:
     test_files = None
+
 # Generate the data handler object
 otu_handler = OTUHandler(files, test_files)
 
 # Normalize the data
-# Normalize the data.
 if type(norm_method) == list:
     for nm in norm_method:
         otu_handler.normalize_data(method=nm)
@@ -44,7 +50,10 @@ else:
 # Set train and validation split
 otu_handler.set_train_val()
 
+# Set the GPU to use.
 use_gpu = torch.cuda.is_available()
+if use_gpu:
+    torch.cuda.set_device(gpu_to_use)
 
 if not os.path.isdir(output_dir):
     os.mkdir(output_dir)

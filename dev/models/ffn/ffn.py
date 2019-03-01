@@ -15,6 +15,10 @@ from helpers.model_helper import *
 import csv
 
 class FFN(nn.Module):
+    '''
+    Pretty straightforward feed forward network for predicting change in OTUs
+    over time.
+    '''
     def __init__(self, hidden_dim, otu_handler, slice_len,
                  use_gpu=False):
         super(FFN, self).__init__()
@@ -23,6 +27,7 @@ class FFN(nn.Module):
         self.slice_len = slice_len
         self.use_gpu = use_gpu
 
+        # The model architecture is basically some linear layers. very simple.
         self.linear_layers = nn.Sequential(
             nn.Linear(self.otu_handler.num_strains, self.hidden_dim),
             nn.ReLU(),
@@ -48,11 +53,10 @@ class FFN(nn.Module):
     def get_intermediate_losses(self, loss_function,
                                 num_batches=10):
         '''
-        This generates some scores
+        This generates some scores for the accuracy of the training and
+        validation and test data. It returns the losses on a per-otu basis.
         '''
         self.eval()
-
-        scores_to_return = []
 
         # First get some training loss and then a validation loss.
         if self.otu_handler.test_data is not None:
@@ -80,22 +84,17 @@ class FFN(nn.Module):
                 if is_conv_ffn:
                     output_len = outputs.size(2)
                     targets = targets[:, :, -output_len:]
-                # Get the loss associated with this validation data.
 
-                # loss = loss_function(outputs, targets)
-
-                # Store a normalized loss.
+                # Detach from gpu
                 if self.use_gpu:
                     outputs = outputs.detach().cpu()
                     targets = targets.detach().cpu()
-                # else:
-                #     to_write = (loss.data.numpy().item()
-                #                                / (num_batches))
 
+                # For each strain get the loss.
                 for strain in range(self.otu_handler.num_strains):
-                    # Get the loss associated with this validation data.
                     strain_losses[i, strain] += loss_function(outputs[:, strain],
                                                               targets[:, strain])
+        # Normalize the loss.
         strain_losses /= (num_batches * self.otu_handler.num_strains)
         return strain_losses
 
@@ -125,9 +124,10 @@ class FFN(nn.Module):
 
     def do_training(self, batch_size, epochs, lr, samples_per_epoch,
                     save_params=None):
-
+        '''
+        This function is actually what does the training for the model itself.
+        '''
         np.random.seed(1)
-        # self.train()
 
         self.batch_size = batch_size
 

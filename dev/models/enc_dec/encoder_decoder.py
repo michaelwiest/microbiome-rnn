@@ -265,7 +265,8 @@ class EncoderDecoder(nn.Module):
                                 which_sample=None # This is a string
                                 ):
         '''
-        This generates some scores
+        This generates some scores for the accuracy of the training and
+        validation and test data. It returns the losses on a per-otu basis.
         '''
         self.eval()
 
@@ -317,20 +318,20 @@ class EncoderDecoder(nn.Module):
                                                              target_slice_len,
                                                              teacher_data=tf)
 
-                # We want to get the loss on a per-strain basis.
 
                 if self.use_gpu:
                     forward_preds = forward_preds.detach().cpu()
                     backward_preds = backward_preds.detach().cpu()
                     forward_targets = forward_targets.detach().cpu()
                     backward_targets = backward_targets.detach().cpu()
+                # We want to get the loss on a per-strain basis.
                 for strain in range(self.otu_handler.num_strains):
-                    # Get the loss associated with this validation data.
                     strain_losses[i, strain] += loss_function(forward_preds[:, strain, :],
                                                               forward_targets[:, strain, :])
                     strain_losses[i, strain] += loss_function(backward_preds[:, strain, :],
                                                               backward_targets[:, strain, :])
 
+        # normalize the loss. the two is because we have two loss functions.
         strain_losses /= (2 * num_batches * self.otu_handler.num_strains)
         return strain_losses
 
