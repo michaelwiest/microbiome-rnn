@@ -1,15 +1,17 @@
 batch_size = 50
 # Size of the hidden layers of the network.
-hidden_dim = 64
+hidden_dim = 512
 # How many samples to check before one epoch. Kind of arbitrary.
 samples_per_epoch = 500000
-num_epochs = 20
+num_epochs = 5-
 learning_rate = 0.0000005
 # Length of the sequence being passed to the LSTM or FFN.
-seq_len = 25
+seq_len = 5
 # For the compression step with the LSTM how many strains to reduce it to.
-reduced_num_strains = 25
+reduced_num_strains = 36
 
+# How to normalize the data.
+norm_method = ['clr', 'zscore']
 
 # Use conv
 use_convs = True

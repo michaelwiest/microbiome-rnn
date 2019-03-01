@@ -33,9 +33,16 @@ else:
 # Generate the data handler object
 otu_handler = OTUHandler(files, test_files)
 
+# Normalize the data
+# Normalize the data.
+if type(norm_method) == list:
+    for nm in norm_method:
+        otu_handler.normalize_data(method=nm)
+else:
+    otu_handler.normalize_data(method=norm_method)
+
 # Set train and validation split
 otu_handler.set_train_val()
-otu_handler.normalize_data()
 
 use_gpu = torch.cuda.is_available()
 
