@@ -99,7 +99,9 @@ class FFN(nn.Module):
         strain_losses /= (num_batches * self.otu_handler.num_strains)
         return strain_losses
 
-    def __print_and_log_losses(self, new_losses, save_params):
+    def __print_and_log_losses(self, new_losses, save_params,
+                               instantiate=False # Overwrite tensor if first time.
+                               ):
         '''
         This function joins the newest loss values to the ongoing tensor.
         It also prints out the data in a readable fashion.
