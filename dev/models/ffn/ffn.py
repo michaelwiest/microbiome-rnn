@@ -60,6 +60,8 @@ class FFN(nn.Module):
         else:
             samples = ['train', 'validation']
 
+        strain_losses = np.zeros((len(samples), self.otu_handler.num_strains))
+
         for which_sample in samples:
             loss = 0
             for b in range(num_batches):
@@ -84,33 +86,34 @@ class FFN(nn.Module):
 
             # Store a normalized loss.
             if self.use_gpu:
-                scores_to_return.append(loss.data.cpu().numpy().item()
-                                        / (num_batches))
+                strain_losses[i, strain] = (loss.data.cpu().numpy().item()
+                                           / (num_batches))
             else:
-                scores_to_return.append(loss.data.numpy().item()
-                                        / (num_batches))
-        return scores_to_return
+                strain_losses[i, strain] = (loss.data.numpy().item()
+                                           / (num_batches))
+        strain_losses /= (num_batches * self.otu_handler.num_strains)
+        return strain_losses
 
     def __print_and_log_losses(self, new_losses, save_params):
-        train_l = new_losses[0]
-        val_l = new_losses[1]
-        self.train_loss_vec.append(train_l)
-        self.val_loss_vec.append(val_l)
-        print('Train loss: {}'.format(train_l))
-        print('  Val loss: {}'.format(val_l))
+        '''
+        This function joins the newest loss values to the ongoing tensor.
+        It also prints out the data in a readable fashion.
+        '''
+        if instantiate:
+            self.loss_tensor = np.expand_dims(new_losses, axis=-1)
+        else:
+            new_losses = np.expand_dims(new_losses, axis=-1)
+            self.loss_tensor = np.concatenate((self.loss_tensor, new_losses),
+                                              axis=-1)
 
-        if len(new_losses) == 3:
-            test_l = new_losses[2]
-            self.test_loss_vec.append(test_l)
-            print(' Test loss: {}'.format(test_l))
+        to_print = self.loss_tensor[:, :, -1].sum(axis=1).tolist()
+        print_str = ['Train loss: {}', '  Val loss: {}',
+                     ' Test loss: {}']
+        for i, tp in enumerate(to_print):
+            print(print_str[i].format(tp))
 
         if save_params is not None:
-            with open(save_params[1], 'w+') as csvfile:
-                writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(self.train_loss_vec)
-                writer.writerow(self.val_loss_vec)
-                if len(new_losses) == 3:
-                    writer.writerow(self.test_loss_vec)
+            np.save(save_params[1], self.loss_tensor)
 
 
     def do_training(self, batch_size, epochs, lr, samples_per_epoch,
