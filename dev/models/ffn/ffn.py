@@ -66,6 +66,7 @@ class FFN(nn.Module):
                 is_conv_ffn = type(self).__name__ == 'ConvFFN'
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
                                                                            self.slice_len,
+                                                                           self.slice_len,
                                                                            which_data=which_sample,
                                                                            target_slice=is_conv_ffn)
                 data = add_cuda_to_variable(data, self.use_gpu,
@@ -147,6 +148,7 @@ class FFN(nn.Module):
                 # Select a random sample from the data handler.
                 is_conv_ffn = type(self).__name__ == 'ConvFFN'
                 data, targets = self.otu_handler.get_N_samples_and_targets(self.batch_size,
+                                                                           self.slice_len,
                                                                            self.slice_len,
                                                                            target_slice=is_conv_ffn)
 
