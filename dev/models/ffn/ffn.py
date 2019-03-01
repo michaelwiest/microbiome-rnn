@@ -62,7 +62,7 @@ class FFN(nn.Module):
 
         strain_losses = np.zeros((len(samples), self.otu_handler.num_strains))
 
-        for which_sample in samples:
+        for i, which_sample in enumerate(samples):
             loss = 0
             for b in range(num_batches):
                 is_conv_ffn = type(self).__name__ == 'ConvFFN'
@@ -82,15 +82,20 @@ class FFN(nn.Module):
                     targets = targets[:, :, -output_len:]
                 # Get the loss associated with this validation data.
 
-                loss += loss_function(outputs, targets)
+                # loss = loss_function(outputs, targets)
 
-            # Store a normalized loss.
-            if self.use_gpu:
-                strain_losses[i, strain] = (loss.data.cpu().numpy().item()
-                                           / (num_batches))
-            else:
-                strain_losses[i, strain] = (loss.data.numpy().item()
-                                           / (num_batches))
+                # Store a normalized loss.
+                if self.use_gpu:
+                    outputs = outputs.detach().cpu()
+                    targets = targets.detach().cpu()
+                # else:
+                #     to_write = (loss.data.numpy().item()
+                #                                / (num_batches))
+
+                for strain in range(self.otu_handler.num_strains):
+                    # Get the loss associated with this validation data.
+                    strain_losses[i, strain] += loss_function(outputs[:, strain],
+                                                              targets[:, strain])
         strain_losses /= (num_batches * self.otu_handler.num_strains)
         return strain_losses
 
@@ -138,7 +143,9 @@ class FFN(nn.Module):
 
         # Get some initial losses.
         losses = self.get_intermediate_losses(loss_function)
-        self.__print_and_log_losses(losses, save_params)
+
+        self.loss_tensor = None
+        self.__print_and_log_losses(losses, save_params, instantiate=True)
 
         for epoch in range(epochs):
             iterate = 0
