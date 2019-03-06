@@ -5,6 +5,9 @@ import numpy as np
 import argparse
 import os
 
+'''
+This file does three main things. 
+'''
 
 def main():
 

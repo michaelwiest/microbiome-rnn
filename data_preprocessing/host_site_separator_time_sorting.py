@@ -1,3 +1,9 @@
+from biom import load_table
+import numpy as np
+import pandas as pd
+import os
+import argparse
+
 '''
 This file does the following:
 - breaks out the biom tables into subjects and
@@ -5,13 +11,16 @@ This file does the following:
 - Adds taxonomy information to the files.
 - Sorts the tables by collection date.
 '''
-import sys
-from biom import load_table
-import numpy as np
-import pandas as pd
-import os
-import argparse
-import pdb
+
+
+def get_collection_days(table):
+    '''
+    This function is because one of the studies does not use a timestamp
+    but uses a collection day which are ints stored as strings. of course...
+    '''
+    str_vals = [m['collection_day'] for m in table.metadata()]
+    int_vals = [int(s) if s != '' else 0 for s in str_vals]
+    return int_vals
 
 def merge_dicts(*dict_args):
     """
@@ -32,12 +41,18 @@ parser.add_argument("-b", "--biom", type=str,
                     help="The BIOM file to handle.")
 parser.add_argument("-t", "--taxonomy", type=str,
                     help="The file or directory of taxonomy data.")
+parser.add_argument("-f", "--field", type=str, default='collection_timestamp',
+                    help="The field to look in for timestamp info.")
+
 
 
 args = parser.parse_args()
 biom_name = args.biom
 biom_base = ''.join(biom_name.split('.')[:-1])
 tax_name = args.taxonomy
+field = args.field
+if field not in ['collection_timestamp', 'collection_day']:
+    raise ValueError('field must be in [collection_timestamp, collection_day]')
 
 '''
 Load in the taxonomy data.
@@ -103,12 +118,18 @@ for j, table in enumerate(output_tables):
         new_index = [mapping[i] for i in indices]
         to_save = pd.DataFrame(tv, index=new_index, columns=tcols)
 
+        to_save = to_save.T
         # If we want to sort the dates. Some samples don't have correct date
         # information associated so this doesn't work.
-        dates = [m['collection_timestamp'] for m in table.metadata()]
-        to_save = to_save.T
-        to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
-                                         errors='coerce')
+        if field == 'collection_timestamp':
+            dates = [m['collection_timestamp'] for m in table.metadata()]
+            to_save['date'] = pd.to_datetime(dates, infer_datetime_format=True,
+                                             errors='coerce')
+        else:
+            dates = get_collection_days(table)
+            print(dates)
+            to_save['date'] = dates
+
         to_save.dropna(subset=['date'], inplace=True)
         to_save.sort_values(by=['date'], inplace=True)
         dates = to_save['date']

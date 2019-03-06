@@ -73,7 +73,7 @@ def main():
         os.makedirs(output_dir)
     sum_strains = args.sum
 
-    files = os.listdir(input_dir)
+    files = [f for f in os.listdir(input_dir) if f.endswith('.csv')]
     otu_dfs = []
     # Get the OTUs from each file.
     for f in files:
@@ -84,12 +84,13 @@ def main():
 
     for i, df in enumerate(otu_dfs):
         # Either take the first (highest) value for each strain. Or
-        # get the sum of all the matching strains.
+        # get the sum of all the matching strains. I only use the sum function.
         if sum_strains:
             grouped = df.groupby(level=list(range(0, level))).sum()
             grouped['mean'] = grouped.mean(axis=1)
             grouped.sort_values(by='mean', inplace=True, ascending=False)
             grouped.drop('mean', axis=1, inplace=True)
+        # This isn't really used.
         else:
             grouped = df.groupby(level=list(range(0, level))).first()
         # Reindex the df so that it has a string index.

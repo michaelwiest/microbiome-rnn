@@ -1,15 +1,18 @@
-import sys
 from biom import load_table
 import os
 import argparse
-import biom
-import pdb
 
 '''
-This file combines multiple biom files from the (hopefully) same individuals
+This file combines multiple biom files from the (hopefully) same individuals.
+If there are lots of files to combine this can take a while. Also it uses
+a large amount of memory.
+
+Usage:
+
+python biom_combiner.py -i <input dir> -o <output file name.txt>
 '''
 
-# Read in our data
+# Read in our arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str,
                     help="Directory of biom files to combine.")
@@ -18,7 +21,10 @@ parser.add_argument("-o", "--output", type=str,
 args = parser.parse_args()
 indir = args.input
 outname = args.output
+if not outname.endswith('.txt'):
+    raise ValueError('The output file name must end in *.txt')
 
+# Get all the files.
 biom_file_names = [os.path.join(indir, f) for f in os.listdir(indir) if f.endswith('.biom')]
 biom_files = [load_table(f) for f in biom_file_names]
 

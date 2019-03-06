@@ -3,24 +3,26 @@ import sys
 import numpy as np
 from os import walk
 import argparse
-# from skbio.stats.composition import clr, ilr
-# from scipy.stats.mstats import gmean
-# from sklearn import cluster, covariance, manifold, decomposition, preprocessing
 import os
 
 '''
-Takes the most prolific N strains from all the files in the argument directory.
+Takes the most prolific N OTUs from all the files in the argument directory.
+If there are fewer than N OTUs that intersect all files then the maximum
+number of intersecting strains is used instead.
+Usage:
+
+python top_N_strains.py -i <input dir> -o <output dir>  -n <number of otus>
 '''
 
 def main():
-    # Read in our data
+    # Read in our arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", type=str,
                         help="The directory of input data.")
     parser.add_argument("-o", "--output", type=str,
                         help="The directory of output data.")
-    parser.add_argument("-n", "--nstrains", type=int, default=100,
-                        help="How many strains to subset to.")
+    parser.add_argument("-n", "--notus", type=int, default=100,
+                        help="How many OTUs to subset to.")
 
     args = parser.parse_args()
     input_dir = args.input
@@ -28,22 +30,22 @@ def main():
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    N_strains = args.nstrains
+    N_strains = args.notus
 
-    # Not really used.
+    # DEPRECATED. This could be reimplemented but I did not.
     rolling_window = None  # Configurable for smoothing
 
-    # Get each file
+    # Get all the filenames
     files = []
     for (dirpath, dirnames, filenames) in walk(input_dir):
         files.extend(filenames)
         break
-
+    files = [f for f in files if f.endswith('.csv')]
+    files.sort()
     print('Loading...')
     print('\n'.join(files))
 
-    # Get the OTUs from each file.
-
+    # Read in the data.
     otu_dfs = [pd.read_csv(os.path.join(input_dir, f), header=0, index_col=0) for f in files if f.endswith('.csv')]
     print('Finished loading data')
 
