@@ -43,7 +43,7 @@ tax_name = args.taxonomy
 Load in the taxonomy data.
 '''
 if os.path.isdir(tax_name):
-    tax_files = [os.path.join(tax_name, f) for f in os.listdir(tax_name)]
+    tax_files = [os.path.join(tax_name, f) for f in os.listdir(tax_name) if f.endswith('.txt')]
     tax_dicts = []
     # Read in the files.
     for file in tax_files:
