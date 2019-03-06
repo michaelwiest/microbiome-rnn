@@ -24,8 +24,8 @@ The general workflow is to use the scripts in the `data_preprocessing` directory
 
 At this point only the sampling sites or hosts of interest can be selected as they are now in their own files (as opposed to combined into one `*.biom` file).
 
-- `otu_matrix_completer`
 - `sum_truncate_sort_taxonomy`
+- `filtering_normalization_completion`
 - `top_N_strains`
 
 How to use each of these files is described in the respective file.

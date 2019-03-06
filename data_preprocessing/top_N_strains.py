@@ -34,7 +34,6 @@ def main():
     rolling_window = None  # Configurable for smoothing
 
     # Get each file
-    otu_dfs = []
     files = []
     for (dirpath, dirnames, filenames) in walk(input_dir):
         files.extend(filenames)
@@ -44,8 +43,8 @@ def main():
     print('\n'.join(files))
 
     # Get the OTUs from each file.
-    for f in files:
-        otu_dfs.append(pd.read_csv(os.path.join(input_dir, f), header=0, index_col=0))
+
+    otu_dfs = [pd.read_csv(os.path.join(input_dir, f), header=0, index_col=0) for f in files if f.endswith('.csv')]
     print('Finished loading data')
 
     # This is what gets all of the appropriate strains from each file.
