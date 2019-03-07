@@ -197,7 +197,7 @@ class EncoderDecoder(nn.Module):
                 # If we are beyond the bounds of the backward teacher data,
                 # just use the new prediction. These predictions are not passed
                 # to the loss function so it doesn't matter.
-                if i > (teacher_data[1].size()[0]):
+                if i >= (teacher_data[1].size()[0]):
                     backward_inp = backward
                 else:
                     backward_inp = teacher_data[1][i, :, :].unsqueeze(0)
