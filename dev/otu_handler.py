@@ -158,7 +158,3 @@ class OTUHandler(object):
         targets = np.array(targets)
 
         return samples, targets
-
-
-    def plot_values(self, sample_indices, num_strains):
-        pass

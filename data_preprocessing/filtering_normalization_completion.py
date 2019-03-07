@@ -6,11 +6,20 @@ import argparse
 import os
 
 '''
-This file does three main things. 
+This file does three main things:
+    1. Filters entries with fewer than the specified number of non-zero entries
+       for each OTU.
+    2. Normalizes the data to account for sequencing bias.
+    3. Performs matrix completion.
+
+Usage:
+python filtering_normalization_completion.py -i <input dir> -o <output dir>  -n <number of nonzero otus>
+
 '''
 
-def main():
 
+def main():
+    # Read in the arguments.
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", type=str,
                         help="The directory of input data.")
@@ -46,18 +55,22 @@ def main():
         # This removes timepoints with all zero counts
         df = df.loc[:, (df != 0).any(axis=0)]
         print('output shape: {}'.format(df.shape))
+
         # Normalize the counts
+        # Get the sum of all OTUs at a particular time point.
         sums = np.repeat(np.expand_dims(df.sum(axis=0), 0),
                          df.shape[0], axis=0)
+        # Get the median value of all the sums.
         meds = np.median(sums)
+        # Normalize.
         df = df * meds / sums
-        print('normalized')
+        print('Normalized')
         # Perform matrix completion.
         try:
             completed = pd.DataFrame(untangle.complete_matrix(df.as_matrix().copy(),
                                                               iteration=1000, minval=0.1),
                                                               index=df.index, columns=df.columns)
-            print('completed')
+            print('Completed')
             completed.to_csv(os.path.join(outdir, out_name))
         except:
             print('Failed to complete this file.')

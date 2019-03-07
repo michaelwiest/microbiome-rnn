@@ -9,8 +9,8 @@ import os
 Takes the most prolific N OTUs from all the files in the argument directory.
 If there are fewer than N OTUs that intersect all files then the maximum
 number of intersecting strains is used instead.
-Usage:
 
+Usage:
 python top_N_strains.py -i <input dir> -o <output dir>  -n <number of otus>
 '''
 
