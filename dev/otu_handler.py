@@ -53,8 +53,8 @@ class OTUHandler(object):
         for i, sample in enumerate(self.samples):
             index = int(percent * sample.shape[1])
             # If not enough examples, skip this file.
-            if not ((sample.iloc[:, :index].shape[1]) < minsize * 2 or
-                    (sample.iloc[:, index:].shape[1]) < minsize * 2):
+            if not ((sample.iloc[:, :index].shape[1]) < minsize or
+                    (sample.iloc[:, index:].shape[1]) < minsize):
                 self.train_data.append(sample.iloc[:, :index])
                 self.val_data.append(sample.iloc[:, index:])
                 temp_sizes.append(sample.iloc[:, :index].shape[1])
@@ -130,7 +130,7 @@ class OTUHandler(object):
             probs = [s / (1.0 * sum(all_sizes)) for s in all_sizes]
             which_samples = np.random.choice(len(data_source), N, p=probs)
         else:
-            # If we know what donor we want then only sample from that one. 
+            # If we know what donor we want then only sample from that one.
             which_samples = [which_donor] * N
 
         # Pick a random sample and whether or not it is training or validation.
