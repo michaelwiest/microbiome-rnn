@@ -17,7 +17,8 @@ import csv
 
 class Encoder(nn.Module):
     '''
-    Encoder Object.
+    Encoder object. It returns its own output to be used in the attention
+    mechanism.
     '''
     def __init__(self, input_size, hidden_dim, num_lstms, use_gpu):
         super(Encoder, self).__init__()
@@ -30,12 +31,6 @@ class Encoder(nn.Module):
             nn.Linear(self.input_size, hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # nn.ReLU(),
-            # # nn.Dropout(0.05),
-            # nn.Linear(hidden_dim, hidden_dim),
-            # nn.ReLU(),
-            # # nn.Dropout(0.05),
             nn.Linear(hidden_dim, self.input_size),
             nn.ReLU()
         )
@@ -67,28 +62,13 @@ class Decoder(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_dim, num_lstms)
         self.linear = nn.Sequential(
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.05),
             nn.Linear(self.hidden_dim, self.hidden_dim),
             nn.ReLU(),
             nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.BatchNorm1d(self.hidden_dim),
             nn.ReLU(),
-            # nn.Linear(self.hidden_dim, self.hidden_dim),
-            # nn.ReLU(),
-            # # nn.Dropout(0.05),
-            # nn.Linear(self.hidden_dim, self.hidden_dim),
-            # # nn.BatchNorm1d(self.hidden_dim),
-            # nn.ReLU(),
-            # # nn.Dropout(0.05),
-            # nn.Linear(self.hidden_dim, self.hidden_dim),
-            # # nn.BatchNorm1d(self.hidden_dim),
-            # nn.ReLU(),
-            # nn.Dropout(0.05),
             nn.Linear(self.hidden_dim, self.input_size),
-            # nn.BatchNorm1d(self.otu_handler.num_strains)
-            # nn.ReLU()
         )
 
         if use_attention:
@@ -100,6 +80,9 @@ class Decoder(nn.Module):
         self.hidden = None
 
     def forward(self, input, encoder_output=None, hidden=None):
+        '''
+        Forward pass through the decoder object.
+        '''
         if hidden is None:
             hidden = self.hidden
 
@@ -128,8 +111,9 @@ class Decoder(nn.Module):
 class EncoderDecoder(nn.Module):
     '''
     Model for predicting OTU counts of microbes given historical data.
-    Uses fully connected layers and an LSTM (could use 1d convolutions in the
-    future for better accuracy).
+    Uses fully connected layers and an three LSTMS.
+    It learns to predict forward in time and also to recapitulate the input
+    sequence.
     '''
     def __init__(self, hidden_dim, otu_handler,
                  num_lstms,
@@ -145,7 +129,9 @@ class EncoderDecoder(nn.Module):
         if LSTM_in_size is None:
             LSTM_in_size = self.otu_handler.num_strains
 
+        # Usually just 1.
         self.num_lstms = num_lstms
+        # Make the encoder and decoders objects.
         self.encoder = Encoder(LSTM_in_size, hidden_dim, num_lstms, self.use_gpu)
         self.decoder_forward = Decoder(LSTM_in_size,
                                        hidden_dim,
@@ -208,7 +194,7 @@ class EncoderDecoder(nn.Module):
                 backward_inp = backward
             else:
                 forward_inp = teacher_data[0][i, :, :].unsqueeze(0)
-                backward_inp = teacher_data[0][i, :, :].unsqueeze(0)
+                backward_inp = teacher_data[1][i, :, :].unsqueeze(0)
 
         return forward_pred.transpose(1, 2).transpose(0, 2), backward_pred.transpose(1, 2).transpose(0, 2)[:, :, :input_data.size()[0]]
 
