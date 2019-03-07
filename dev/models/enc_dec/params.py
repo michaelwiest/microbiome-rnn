@@ -1,6 +1,6 @@
 batch_size = 50
 # Size of the hidden layers of the network.
-hidden_dim = 2048
+hidden_dim = 512
 # How many samples to check before one epoch. Kind of arbitrary.
 samples_per_epoch = 500000
 num_epochs = 50
@@ -11,7 +11,7 @@ inp_slice_len = 5
 target_slice_len = 5
 
 # This is how many input strains there are.
-num_strains = 37
+num_strains = 36
 
 # If this value is below one then it increases by that percent
 # every epoch. If greater than one then it increases by that fixed
