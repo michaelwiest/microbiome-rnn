@@ -253,7 +253,11 @@ class EncoderDecoder(nn.Module):
         '''
         This generates some scores for the accuracy of the training and
         validation and test data. It returns the losses on a per-otu basis.
+
+        This is super redundant with the do training code and could be
+        combined in the future.
         '''
+        # Put the model in evaluation mode.
         self.eval()
 
         if which_sample is None:
@@ -317,7 +321,7 @@ class EncoderDecoder(nn.Module):
                     strain_losses[i, strain] += loss_function(backward_preds[:, strain, :],
                                                               backward_targets[:, strain, :])
 
-        # normalize the loss. the two is because we have two loss functions.
+        # normalize the loss. The two is because we have two loss functions.
         strain_losses /= (2 * num_batches * self.otu_handler.num_strains)
         return strain_losses
 
@@ -359,6 +363,9 @@ class EncoderDecoder(nn.Module):
                     save_params=None,
                     use_early_stopping=True,
                     early_stopping_patience=10):
+        '''
+        This function is what actually trains the model.
+        '''
         np.random.seed(1)
 
         self.batch_size = batch_size
@@ -466,7 +473,7 @@ class EncoderDecoder(nn.Module):
                         target_slice_len = min(self.otu_handler.min_len - 1, int(target_slice_len))
                         print('Increased target slice length to: {}'.format(target_slice_len))
 
-
+            # Check if our current state is better than our best thus far.
             if use_early_stopping:
                 stop_early = self.__evaluate_early_stopping(epoch,
                                                             early_stopping_patience)
@@ -479,77 +486,24 @@ class EncoderDecoder(nn.Module):
                 print('Saved model state to: {}'.format(save_params[0]))
                 print('Best model from epoch: {}'.format(self.best_model_epoch))
 
+            # If we have met our stopping criteria then stop.
             if stop_early and use_early_stopping:
                 break
 
-    def daydream(self, primer, predict_len=100, window_size=20,
-                 bypass_encoder=True, batch=False):
-        '''
-        DEPRECATED
-
-        Function for letting the Encoder Decoder "dream" up new data.
-        Given a primer it will generate examples for as long as specified.
-        '''
-        if len(primer.shape) != 3:
-            raise ValueError('Please provide a 3d array of shape: '
-                             '(num_strains, slice_length, batch_size)')
-        self.batch_size = primer.shape[-1]
-        self.__init_hidden()
-        self.eval()
-
-        predicted = primer
-
-        if not batch:
-            # Prime the model with all the data but the last point.
-            inp = add_cuda_to_variable(predicted[:, :-1],
-                                       self.use_gpu,
-                                       requires_grad=False) \
-                .transpose(0, 2) \
-                .transpose(0, 1)[-window_size:, :, :]
-            _, _ = self.forward(inp)
-
-        for p in range(predict_len):
-
-            if not batch:
-                inp = add_cuda_to_variable(predicted[:, -1, :], self.use_gpu).unsqueeze(1)
-            else:
-                inp = add_cuda_to_variable(predicted[:, -window_size:, :], self.use_gpu)
-            inp = inp.transpose(0, 2).transpose(0, 1)[-window_size:, :, :]
-
-            # Only keep the last predicted value.
-            output, _ = self.forward(inp, bypass_encoder=bypass_encoder)
-            if batch:
-                output = output[:, :, 0].transpose(0, 1).data
-            else:
-                output = output[:, :, -1].transpose(0, 1).data
-            if self.use_gpu:
-                output = output.cpu().numpy()
-            else:
-                output = output.numpy()
-
-            # Need to reshape the tensor so it can be concatenated.
-            output = np.expand_dims(output, 1)
-            # Add the new value to the values to be passed to the LSTM.
-            predicted = np.concatenate((predicted, output), axis=1)
-
-            if batch:
-                self.__init_hidden()
-
-        return predicted
-
     def daydream2(self, primer, predict_len=100):
         '''
-        This version should be the one used. I'm keeping the older version
-        in case this one doesn't work.
+        This function primes the model with a certain sequence and then allows
+        it to predict into the future.
+
+        There used to be a function called daydream, hence why this is called
+        what it is.
         '''
         if len(primer.shape) != 3:
             raise ValueError('Please provide a 3d array of shape: '
                              '(num_strains, slice_length, batch_size)')
         self.batch_size = primer.shape[-1]
         self.__init_hidden()
-        # self.eval()
 
-        predicted = primer
         inp = add_cuda_to_variable(primer, self.use_gpu, requires_grad=False).transpose(0, 2).transpose(0, 1)
         output, _ = self.forward(inp, predict_len)
         output = output.transpose(0, 1).transpose(1, 2)
