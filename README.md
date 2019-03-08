@@ -33,7 +33,7 @@ How to use each of these scripts is described in the respective file.
 The output of the data preprocessing pipeline is available in `input_data`. The directory `summed_completed_no_chloro` was used to train the models reported on in this study. The `_no_chloro` refers to the fact that an organism identified as part of a chloroplast was manually removed from those datasets.
 
 ## Training a model
-Given a directory of data as produced from above (let's call it `input_dir`) training is very simple. Each model type has its own directory `models/<model_type>/`; in that directory there is a file called `params.py` where pertinent training features can be altered.
+Given a directory of data as produced from above (let's call it `input_dir`) training is very simple. Each model type has its own directory `dev/models/<model_type>/`; in that directory there is a file called `params.py` where pertinent training parameters can be altered.
 
 To train a model do:
 ```
